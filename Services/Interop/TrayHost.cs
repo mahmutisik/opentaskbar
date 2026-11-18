@@ -27,6 +27,12 @@ internal sealed class TrayHost : IDisposable
 
     public static TrayHost? Current { get; private set; }
 
+    /// <summary>
+    /// True while this process broadcasts <c>TaskbarCreated</c> itself (on start and shutdown). The broadcast also
+    /// reaches the dock window synchronously; it must not be mistaken for an Explorer restart.
+    /// </summary>
+    public static bool IsBroadcasting { get; private set; }
+
     public bool IsRunning => _area is { IsFailed: false };
 
     public ObservableCollection<NotifyIcon> Icons => _area?.TrayIcons ?? [];
@@ -38,6 +44,7 @@ internal sealed class TrayHost : IDisposable
         var host = new TrayHost();
         try
         {
+            IsBroadcasting = true;
             host._trayService = new TrayService();
             host._area = new NotificationArea(host._trayService, new ExplorerTrayService());
             host._area.Initialize();
@@ -45,6 +52,10 @@ internal sealed class TrayHost : IDisposable
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ExternalException or TypeInitializationException)
         {
             AppLog.Warning($"Tray host failed to start: {ex.Message}");
+        }
+        finally
+        {
+            IsBroadcasting = false;
         }
 
         if (!host.IsRunning)
@@ -76,11 +87,16 @@ internal sealed class TrayHost : IDisposable
     {
         try
         {
+            IsBroadcasting = true;
             _area?.Dispose();
         }
         catch (Exception ex) when (ex is COMException or InvalidOperationException or ExternalException)
         {
             AppLog.Warning($"Tray host shutdown: {ex.Message}");
+        }
+        finally
+        {
+            IsBroadcasting = false;
         }
 
         _area = null;

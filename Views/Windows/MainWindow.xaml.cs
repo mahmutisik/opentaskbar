@@ -412,7 +412,8 @@ public partial class MainWindow : Window
     {
         if (_taskbarCreatedMessage != 0 && unchecked((uint)message) == _taskbarCreatedMessage)
         {
-            _replacementSession?.HandleTaskbarCreated();
+            // Our own tray host broadcasts TaskbarCreated to collect icons; only an Explorer restart needs handling.
+            if (!TrayHost.IsBroadcasting) _replacementSession?.HandleTaskbarCreated();
             handled = true;
             return IntPtr.Zero;
         }
