@@ -532,7 +532,7 @@ public sealed class TaskbarReplacementSession : IDisposable
 
     private void ReadNativeTaskbarHeight()
     {
-        var taskbar = FindWindow("Shell_TrayWnd", null);
+        var taskbar = NativeTaskbarWindow.Find();
         var data = CreateData();
         if (taskbar == 0 || SHAppBarMessage(AbmGetTaskbarPos, ref data) == 0)
             throw new InvalidOperationException("ErrorTaskbarDimensions");
@@ -706,7 +706,7 @@ public sealed class TaskbarReplacementSession : IDisposable
 
     private static bool HideNativeTaskbar()
     {
-        var taskbarHandle = FindWindow("Shell_TrayWnd", null);
+        var taskbarHandle = NativeTaskbarWindow.Find();
         if (taskbarHandle == 0)
         {
             return false;
@@ -746,7 +746,7 @@ public sealed class TaskbarReplacementSession : IDisposable
 
     private static bool ShowNativeTaskbar()
     {
-        var taskbarHandle = FindWindow("Shell_TrayWnd", null);
+        var taskbarHandle = NativeTaskbarWindow.Find();
         if (taskbarHandle == 0)
         {
             return false;
@@ -768,7 +768,7 @@ public sealed class TaskbarReplacementSession : IDisposable
 
     private static bool IsNativeTaskbarVisible()
     {
-        var taskbar = FindWindow("Shell_TrayWnd", null);
+        var taskbar = NativeTaskbarWindow.Find();
         return taskbar != 0 && IsWindowVisible(taskbar);
     }
 
@@ -860,7 +860,7 @@ public sealed class TaskbarReplacementSession : IDisposable
             return true;
         }
 
-        var taskbarHandle = FindWindow("Shell_TrayWnd", null);
+        var taskbarHandle = NativeTaskbarWindow.Find();
         var data = new AppBarData
         {
             cbSize = (uint)Marshal.SizeOf<AppBarData>(),

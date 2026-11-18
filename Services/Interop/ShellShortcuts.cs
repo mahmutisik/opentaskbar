@@ -179,7 +179,7 @@ public static class ShellShortcuts
 
     private static void EnsureNativeTaskbarHidden()
     {
-        var taskbar = FindWindow("Shell_TrayWnd", null);
+        var taskbar = NativeTaskbarWindow.Find();
         if (taskbar != 0 && IsWindowVisible(taskbar))
         {
             ShowWindow(taskbar, SwHide);

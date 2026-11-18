@@ -32,4 +32,8 @@
     <EmbeddedResource Include="tools\watchdog\OpenTaskbarWatchdog.exe" LogicalName="OpenTaskbar.Resources.OpenTaskbarWatchdog.exe" />
   </ItemGroup>
 
+  <ItemGroup>
+    <PackageReference Include="ManagedShell" Version="0.0.374" />
+  </ItemGroup>
+
 </Project>

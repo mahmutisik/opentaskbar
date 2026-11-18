@@ -36,6 +36,8 @@ public partial class App : Application
         {
             var restoreError = TaskbarReplacementSession.ForceRestoreNativeTaskbar();
             if (restoreError is not null) Trace.TraceError(restoreError);
+            // A crashed tray host leaves icons registered with its destroyed window; ask apps to re-add them to Explorer.
+            OpenTaskbar.Services.TrayHost.BroadcastTaskbarCreated();
             Shutdown(restoreError is null ? 0 : 1);
             return;
         }

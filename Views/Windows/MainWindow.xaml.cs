@@ -396,6 +396,8 @@ public partial class MainWindow : Window
         try
         {
             session.Start();
+            // PROTOTYPE: with Explorer's taskbar hidden, host the notification area so tray apps stay reachable.
+            if (session.IsActive) TrayHost.Start();
         }
         catch (InvalidOperationException ex)
         {
@@ -2620,6 +2622,8 @@ public partial class MainWindow : Window
 
     internal string? RestoreWindowsTaskbar()
     {
+        // Hand tray icons back to Explorer before its taskbar becomes visible again.
+        TrayHost.Current?.Dispose();
         var session = _replacementSession;
         if (session is null) return null;
         var error = session.Stop();

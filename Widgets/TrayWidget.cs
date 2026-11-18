@@ -58,6 +58,12 @@ public sealed class TrayWidget : DockWidget
         }
 
         var requestVersion = ++_requestVersion;
+        if (TrayHost.Current is { IsRunning: true } host)
+        {
+            _flyout.Show(_button, BuildLiveContent(host.AppIcons()));
+            return;
+        }
+
         try
         {
             var apps = await Task.Run(TrayIcons.RunningApps);
@@ -70,6 +76,68 @@ public sealed class TrayWidget : DockWidget
             AppLog.Warning($"Tray enumeration failed: {ex.Message}");
             if (IsActive && requestVersion == _requestVersion) Report(UiText.Get("SystemDataUnavailable"));
         }
+    }
+
+    /// <summary>
+    /// PROTOTYPE: live tray icons hosted by <see cref="TrayHost"/>. Left and right clicks are forwarded to the app the
+    /// way the native notification area sends them, so each app opens its own window or its own context menu.
+    /// </summary>
+    internal UIElement BuildLiveContent(IReadOnlyList<ManagedShell.WindowsTray.NotifyIcon> icons)
+    {
+        var root = new StackPanel { Width = 280 };
+        root.Children.Add(DockFlyout.Heading(UiText.Get("TrayApps")));
+        if (icons.Count == 0) root.Children.Add(DockFlyout.Caption(UiText.Get("TrayEmpty")));
+        foreach (var icon in icons)
+        {
+            var title = icon.Title?.Split(['\r', '\n'], StringSplitOptions.RemoveEmptyEntries).FirstOrDefault()?.Trim();
+            var name = string.IsNullOrWhiteSpace(title) ? System.IO.Path.GetFileNameWithoutExtension(icon.Path ?? "") : title;
+            var image = new Image { Source = icon.Icon, Width = 20, Height = 20, Margin = new Thickness(0, 0, 10, 0) };
+            RenderOptions.SetBitmapScalingMode(image, BitmapScalingMode.HighQuality);
+            var row = new DockPanel();
+            row.Children.Add(image);
+            row.Children.Add(new TextBlock { Text = name, VerticalAlignment = VerticalAlignment.Center, TextTrimming = TextTrimming.CharacterEllipsis });
+            var open = DockFlyout.FlatButton(row, (_, _) => ForwardClick(icon, System.Windows.Input.MouseButton.Left), name);
+            // The app draws its own menu; close the flyout first so the menu keeps the foreground.
+            open.PreviewMouseRightButtonUp += (_, e) =>
+            {
+                e.Handled = true;
+                ForwardClick(icon, System.Windows.Input.MouseButton.Right);
+            };
+
+            var appRow = new DockPanel();
+            if (!string.IsNullOrEmpty(icon.Path))
+            {
+                var quitIcon = new ContentControl { Content = FindResource("IconTerminate"), Width = 16, Height = 16 };
+                quitIcon.SetResourceReference(StyleProperty, "WidgetIcon");
+                quitIcon.SetResourceReference(ForegroundProperty, "TextPrimary");
+                var path = icon.Path;
+                var quit = DockFlyout.FlatButton(quitIcon, (_, _) =>
+                {
+                    _flyout.Close();
+                    TerminateApplicationRequested?.Invoke(path);
+                }, $"{name}: {UiText.Get("Terminate")}");
+                DockPanel.SetDock(quit, Dock.Right);
+                appRow.Children.Add(quit);
+            }
+            appRow.Children.Add(open);
+            root.Children.Add(appRow);
+        }
+
+        var settings = DockFlyout.FlatButton(new TextBlock { Text = UiText.Get("TraySettings"), FontWeight = FontWeights.SemiBold }, (_, _) =>
+        {
+            _flyout.Close();
+            Report(ShellShortcuts.OpenUri("ms-settings:taskbar"));
+        });
+        settings.Margin = new Thickness(0, 6, 0, 0);
+        root.Children.Add(settings);
+        return root;
+    }
+
+    private void ForwardClick(ManagedShell.WindowsTray.NotifyIcon icon, System.Windows.Input.MouseButton button)
+    {
+        _flyout.Close();
+        // Let the flyout finish closing before the app takes the foreground for its window or menu.
+        Dispatcher.BeginInvoke(System.Windows.Threading.DispatcherPriority.Background, () => TrayHost.Click(icon, button));
     }
 
     internal UIElement BuildContent(IReadOnlyList<TrayApp> apps)
