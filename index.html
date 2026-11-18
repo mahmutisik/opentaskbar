@@ -1,0 +1,251 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Dock Responsiveness Report</title>
+<meta name="description" content="Measuring where the OpenTaskbar dock waited on its UI thread, and what was changed.">
+<style>
+  :root {
+    --bg: #f6f7f9; --surface: #ffffff; --surface-2: #f0f2f5; --text: #15181d; --muted: #5d6573;
+    --line: #e2e5ea; --accent: #5b4be1; --accent-soft: #ece9fd; --good: #10845a; --good-soft: #e3f5ec;
+    --bad: #c2410c; --bad-soft: #fdebe2; --bar-before: #e07a4f; --bar-after: #2fa36f; --code: #eef0f4;
+    --shadow: 0 1px 2px rgba(16,24,40,.06), 0 8px 24px rgba(16,24,40,.06);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #0e1116; --surface: #161a21; --surface-2: #1c212a; --text: #e8ebf0; --muted: #9aa3b2;
+      --line: #2a303b; --accent: #9b8cff; --accent-soft: #241f45; --good: #4fd19a; --good-soft: #14302a;
+      --bad: #ff9a6b; --bad-soft: #3a2219; --bar-before: #ff8c5a; --bar-after: #45c98a; --code: #222833;
+      --shadow: none;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #0e1116; --surface: #161a21; --surface-2: #1c212a; --text: #e8ebf0; --muted: #9aa3b2;
+    --line: #2a303b; --accent: #9b8cff; --accent-soft: #241f45; --good: #4fd19a; --good-soft: #14302a;
+    --bad: #ff9a6b; --bad-soft: #3a2219; --bar-before: #ff8c5a; --bar-after: #45c98a; --code: #222833;
+    --shadow: none;
+  }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; background: var(--bg); color: var(--text);
+    font: 16px/1.55 "Segoe UI Variable Text", "Segoe UI", system-ui, -apple-system, sans-serif;
+  }
+  main { max-width: 980px; margin: 0 auto; padding: 40px 16px 64px; }
+  header.hero { margin-bottom: 28px; }
+  .eyebrow { color: var(--accent); font-weight: 600; font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  h1 { font-size: clamp(28px, 4vw, 40px); line-height: 1.15; margin: 6px 0 12px; letter-spacing: -.01em; }
+  h2 { font-size: 22px; margin: 44px 0 14px; letter-spacing: -.005em; }
+  h3 { font-size: 17px; margin: 0 0 6px; }
+  p { margin: 0 0 12px; }
+  .lede { color: var(--muted); font-size: 17px; max-width: 760px; }
+  .meta { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 16px; }
+  .chip { background: var(--surface); border: 1px solid var(--line); border-radius: 999px; padding: 4px 12px; font-size: 13px; color: var(--muted); }
+  code { font-family: "Cascadia Code", Consolas, monospace; font-size: .88em; background: var(--code); padding: 1px 6px; border-radius: 6px; }
+  .grid { display: grid; gap: 14px; }
+  .kpis { grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); }
+  .card { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 18px 18px 16px; box-shadow: var(--shadow); }
+  .kpi .label { color: var(--muted); font-size: 13px; }
+  .kpi .value { display: flex; align-items: baseline; gap: 8px; margin-top: 6px; flex-wrap: wrap; }
+  .kpi .before { color: var(--muted); text-decoration: line-through; font-size: 18px; }
+  .kpi .arrow { color: var(--muted); }
+  .kpi .after { font-size: 30px; font-weight: 700; color: var(--good); letter-spacing: -.01em; }
+  .kpi .note { color: var(--muted); font-size: 12.5px; margin-top: 6px; }
+  .fix { display: grid; grid-template-columns: 44px 1fr; gap: 14px; }
+  .badge { width: 44px; height: 44px; border-radius: 12px; display: grid; place-items: center; background: var(--accent-soft); color: var(--accent); font-weight: 700; }
+  .fix .cost { display: inline-block; background: var(--bad-soft); color: var(--bad); border-radius: 8px; padding: 2px 8px; font-size: 13px; font-weight: 600; margin: 2px 0 8px; }
+  .fix .done { display: inline-block; background: var(--good-soft); color: var(--good); border-radius: 8px; padding: 2px 8px; font-size: 13px; font-weight: 600; margin: 2px 0 8px 6px; }
+  .fix ul { margin: 6px 0 0; padding-left: 20px; }
+  .fix li { margin: 3px 0; }
+  .chart { width: 100%; height: auto; display: block; }
+  .chart text { fill: var(--muted); font-size: 12px; font-family: inherit; }
+  .chart .val { fill: var(--text); font-weight: 600; }
+  .legend { display: flex; gap: 16px; font-size: 13px; color: var(--muted); margin-top: 6px; flex-wrap: wrap; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 3px; margin-right: 6px; vertical-align: -1px; }
+  .legend .b::before { background: var(--bar-before); }
+  .legend .a::before { background: var(--bar-after); }
+  table { width: 100%; border-collapse: collapse; font-size: 14.5px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  td.num { font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .two { grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); }
+  .muted { color: var(--muted); }
+  .small { font-size: 13.5px; }
+  .callout { border-left: 3px solid var(--accent); background: var(--surface); border-radius: 0 12px 12px 0; padding: 14px 16px; }
+  footer { margin-top: 48px; color: var(--muted); font-size: 13.5px; border-top: 1px solid var(--line); padding-top: 16px; }
+  a { color: var(--accent); }
+  @media (max-width: 560px) { .fix { grid-template-columns: 1fr; } .badge { display: none; } th, td { padding: 8px 6px; } }
+</style>
+</head>
+<body>
+<main>
+  <header class="hero">
+    <div class="eyebrow">OpenTaskbar · performance</div>
+    <h1>Making the dock feel instant</h1>
+    <p class="lede">A working session with Claude (Claude Code): instead of guessing, we built a temporary diagnostic build that measured
+      where the dock's UI thread waited, then moved that work off it. Animation durations were deliberately left untouched.</p>
+    <div class="meta">
+      <span class="chip">Base: upstream master v0.2.10</span>
+      <span class="chip">4 commits · 9 files</span>
+      <span class="chip">Full suite 1829 checks passing</span>
+      <span class="chip">Windows 11 · 1920×1080 · Smart auto-hide</span>
+    </div>
+  </header>
+
+  <section class="grid kpis" aria-label="Results at a glance">
+    <div class="card kpi">
+      <div class="label">UI freezes ≥ 80 ms in ~2.5 min</div>
+      <div class="value"><span class="before">39</span><span class="arrow">→</span><span class="after">0</span></div>
+      <div class="note">Recurring every 1–3 s before, independent of use.</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">UI thread blocked in ~2.5 min</div>
+      <div class="value"><span class="before">5.8 s</span><span class="arrow">→</span><span class="after">0 s</span></div>
+      <div class="note">From stalls of 80 ms or longer.</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Click → window in front (median)</div>
+      <div class="value"><span class="before">131 ms</span><span class="arrow">→</span><span class="after">100 ms</span></div>
+      <div class="note">The rest is mostly Windows and the app itself.</div>
+    </div>
+    <div class="card kpi">
+      <div class="label">Worst freeze when a new app opened</div>
+      <div class="value"><span class="before">945 ms</span><span class="arrow">→</span><span class="after">off UI</span></div>
+      <div class="note">Its icon now loads on a background thread.</div>
+    </div>
+  </section>
+
+  <h2>Where the time went</h2>
+  <div class="grid two">
+    <div class="card">
+      <h3>UI thread time lost to periodic polling</h3>
+      <p class="small muted">Total over ~2.5 minutes, upstream v0.2.10 vs. this branch.</p>
+      <svg class="chart" viewBox="0 0 420 170" role="img" aria-label="Recycle Bin poll 5.5 seconds before, 0 after; network speed widget 3.7 seconds before, 0 after">
+        <text x="0" y="22">Recycle Bin poll</text>
+        <rect x="140" y="10" width="270" height="18" rx="4" fill="var(--bar-before)"/>
+        <text class="val" x="146" y="24" style="fill:#fff">5.5 s · 52× avg 106 ms</text>
+        <rect x="140" y="32" width="3" height="18" rx="2" fill="var(--bar-after)"/>
+        <text class="val" x="150" y="46">0 s (background)</text>
+        <text x="0" y="98">Network speed tick</text>
+        <rect x="140" y="86" width="181" height="18" rx="4" fill="var(--bar-before)"/>
+        <text class="val" x="146" y="100" style="fill:#fff">3.7 s · 100× avg 37 ms</text>
+        <rect x="140" y="108" width="3" height="18" rx="2" fill="var(--bar-after)"/>
+        <text class="val" x="150" y="122">0 s (background)</text>
+        <line x1="140" y1="150" x2="410" y2="150" stroke="var(--line)"/>
+        <text x="140" y="166">0</text><text x="392" y="166">5.5 s</text>
+      </svg>
+      <div class="legend"><span class="b">upstream</span><span class="a">this branch</span></div>
+    </div>
+    <div class="card">
+      <h3>App icon click → window in front</h3>
+      <p class="small muted">17 clicks before, 30 clicks after (ms).</p>
+      <svg class="chart" viewBox="0 0 420 170" role="img" aria-label="Median 131 to 100 ms, average 157 to 123 ms, 90th percentile 255 to 220 ms">
+        <text x="0" y="24">median</text>
+        <rect x="80" y="10" width="139" height="14" rx="4" fill="var(--bar-before)"/><text class="val" x="225" y="22">131</text>
+        <rect x="80" y="27" width="106" height="14" rx="4" fill="var(--bar-after)"/><text class="val" x="192" y="39">100</text>
+        <text x="0" y="78">average</text>
+        <rect x="80" y="64" width="166" height="14" rx="4" fill="var(--bar-before)"/><text class="val" x="252" y="76">157</text>
+        <rect x="80" y="81" width="130" height="14" rx="4" fill="var(--bar-after)"/><text class="val" x="216" y="93">123</text>
+        <text x="0" y="132">90th pct</text>
+        <rect x="80" y="118" width="270" height="14" rx="4" fill="var(--bar-before)"/><text class="val" x="356" y="130">255</text>
+        <rect x="80" y="135" width="233" height="14" rx="4" fill="var(--bar-after)"/><text class="val" x="319" y="147">220</text>
+      </svg>
+      <div class="legend"><span class="b">upstream</span><span class="a">this branch</span></div>
+    </div>
+  </div>
+
+  <h2>What changed</h2>
+  <div class="grid">
+    <div class="card fix">
+      <div class="badge">1</div>
+      <div>
+        <h3>Recycle Bin and network counters are polled off the UI thread</h3>
+        <span class="cost">80–270 ms every 3 s · ~40 ms every 1 s</span><span class="done">0 ms on UI</span>
+        <p>The Recycle Bin state (<code>SHQueryRecycleBin</code>) was queried every 3 seconds on the UI thread and took around 100 ms inside the
+          dock process; the network speed widget enumerated every adapter and its statistics every second. Together they froze the dock
+          5–6% of the time, which is what made hover, magnification and clicks feel sticky.</p>
+        <ul>
+          <li>Recycle Bin: <code>Task.Run</code>, result applied on the UI thread, overlapping requests coalesced.</li>
+          <li>Network speed: sampled in the background, one sample at a time, rates computed from the real sample time
+            (new <code>ComputeRates</code> helper with tests).</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card fix">
+      <div class="badge">2</div>
+      <div>
+        <h3>Launching and activating apps no longer block the dock</h3>
+        <span class="cost">click handler avg 62 ms, up to 266 ms</span><span class="done">1 of 30 clicks ≥ 30 ms</span>
+        <p>Every activation attached the input queues of two apps and raised the window before asking for focus, which waits on both apps'
+          UI threads. Launching a closed app ran <code>ShellExecuteEx</code> on the UI thread (100 ms to over a second).</p>
+        <ul>
+          <li>A plain <code>SetForegroundWindow</code> is tried first: the dock click is the last input event, so Windows allows it.
+            The old attach/raise path stays as the fallback.</li>
+          <li>Apps start from the thread pool; <code>Process.Start</code> runs <code>ShellExecuteEx</code> on its own STA thread there.</li>
+        </ul>
+      </div>
+    </div>
+    <div class="card fix">
+      <div class="badge">3</div>
+      <div>
+        <h3>The background apps flyout opens immediately</h3>
+        <span class="cost">~100 ms enumeration before every open</span><span class="done">shown from cache</span>
+        <p>The flyout appeared only after reading the tray registry snapshot and every running process. It now shows the last list at once,
+          refreshes in the background and updates in place only if the list changed. The list is also warmed when the pointer reaches the
+          button.</p>
+      </div>
+    </div>
+    <div class="card fix">
+      <div class="badge">4</div>
+      <div>
+        <h3>Running app icons load on a background thread</h3>
+        <span class="cost">30 ms – 945 ms when a new app opened</span><span class="done">no UI freeze</span>
+        <p>Resolving a new app's icon (executable resources → Start menu image via <code>IShellItemImageFactory</code> → file icon) ran on
+          the UI thread. <code>RunningAppIconCache</code> can now offload these lookups to one background STA thread; cache state stays on the
+          UI thread and an <code>IconLoaded</code> event triggers a single refresh. Identity retries behave as before.</p>
+        <p class="small muted">A regression found while testing (a Store app such as WhatsApp lost its freshly loaded image during the refresh
+          it triggered) is fixed in the same commit and covered by a check.</p>
+      </div>
+    </div>
+  </div>
+
+  <h2>How it was measured</h2>
+  <div class="card">
+    <p>A temporary diagnostic build (not part of this PR) wrote to <code>perf.log</code>:</p>
+    <table>
+      <thead><tr><th>Probe</th><th>What it shows</th></tr></thead>
+      <tbody>
+        <tr><td>UI stall probe</td><td>Every 40 ms a no-op is posted at <code>Input</code> priority; anything that delays it ≥ 80 ms is a freeze the user can feel, logged with the operation that was running.</td></tr>
+        <tr><td>Scoped timers</td><td>Click handlers, flyouts, previews, timers, widget ticks and icon loads, logged when ≥ 30 ms.</td></tr>
+        <tr><td>Dispatcher &amp; message hooks</td><td>Every slow dispatcher operation and Win32 message, named by delegate or message and window class.</td></tr>
+        <tr><td>Click → result</td><td>Time from a press on the dock to the flyout or app window appearing.</td></tr>
+      </tbody>
+    </table>
+    <p class="small muted" style="margin-top:12px">Sessions were about 2.5 minutes each on the same machine. The “before” run included normal
+      use (opening Settings, flyouts), the first “after” run was mostly idle; the periodic freezes it removes happen with or without use.</p>
+  </div>
+
+  <h2>Looked at, not changed (yet)</h2>
+  <table class="card" style="padding:4px 8px">
+    <thead><tr><th>Area</th><th class="num">Cost</th><th>Why it was left</th></tr></thead>
+    <tbody>
+      <tr><td>Opening Settings</td><td class="num">0.5–0.7 s</td><td>Constructor ~350 ms, layout ~180 ms, first frame ~130 ms. Keeping the window alive would make reopening instant, but controls are only filled from preferences in the constructor, so a hidden window could later save stale values.</td></tr>
+      <tr><td>Thumbnail preview</td><td class="num">35–90 ms</td><td>Mostly resizing/positioning two transparent windows (~40 ms). Opens after a 300 ms hover delay, so the gain is small.</td></tr>
+      <tr><td>Rendering</td><td class="num">60–160 ms</td><td>Some render passes are expensive; the full-width dock is a layered window (<code>AllowsTransparency</code>), which copies every frame back from the GPU. A bigger architectural change.</td></tr>
+      <tr><td>Startup</td><td class="num">~3.5 s once</td><td>Happens in Win32 message handling during taskbar replacement; needs its own investigation.</td></tr>
+      <tr><td>Animations &amp; hover delays</td><td class="num">—</td><td>Kept as designed on purpose; shortening them is the last resort.</td></tr>
+    </tbody>
+  </table>
+
+  <h2>Verification</h2>
+  <div class="callout">
+    <p><strong><code>dotnet build --warnaserror</code></strong> clean · <strong>full suite 1829 checks</strong> passing (headless 439) ·
+      14 new checks (rate math, launch errors, tray list diffing, offloaded icon cache incl. the refresh/Retain case).</p>
+    <p class="small muted" style="margin:0">Related: <a href="https://github.com/alztrk/opentaskbar/issues/55">#55</a> (AI usage sign-in, fixed upstream),
+      <a href="https://github.com/alztrk/opentaskbar/issues/57">#57</a> (native tray menus prototype).</p>
+  </div>
+
+  <footer>Prepared in a session with Claude (Claude Code). Numbers come from the diagnostic build's <code>perf.log</code> on one Windows 11 machine.</footer>
+</main>
+</body>
+</html>
