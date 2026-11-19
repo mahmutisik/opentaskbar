@@ -296,6 +296,7 @@ public partial class MainWindow : Window
                 || (_settingsWindow is { IsVisible: true, IsActive: true, WindowState: not WindowState.Minimized })
                 || DockFlyout.IsAnyOpen || _keyboardNavigationActive);
         _autoHideController.DockBoundsProvider = GetDockPhysicalBounds;
+        InitializeDockBackdrop(source);
         _autoHideController.IsShellMenuOpen = _startMenu.IsStartMenuOpenNow;
         // The Start menu and the Alt+Tab switcher cover the dock but are not applications: look past them.
         _autoHideController.IsShellMenuWindow = IsShellOverlayWindow;
@@ -2329,7 +2330,7 @@ public partial class MainWindow : Window
         };
     }
 
-    private double EffectiveCornerRadius => _radiusPreviewOverride ?? (_preferences.Current.DockCornerRadius is { } customRadius && customRadius >= 0
+    private double EffectiveCornerRadius => _backdrop is not null ? DockAcrylicBackdrop.CornerRadiusDip : _radiusPreviewOverride ?? (_preferences.Current.DockCornerRadius is { } customRadius && customRadius >= 0
         ? customRadius
         : Profile.Radius);
 
@@ -2388,6 +2389,7 @@ public partial class MainWindow : Window
         var bevelV = -profile.VerticalPadding + 1;
         DockInnerBevel.Margin = IsVertical ? new Thickness(bevelV, bevelH, bevelV, bevelH) : new Thickness(bevelH, bevelV, bevelH, bevelV);
         DockInnerShade.Margin = DockInnerBevel.Margin;
+        SyncBackdrop();
         if (IsVertical) DockFrame.Padding = new Thickness(profile.VerticalPadding, 10, profile.VerticalPadding, 10);
         var scale = profile.WidgetScale;
         var widgetTransform = Math.Abs(scale - 1) > 0.001 ? new ScaleTransform(scale, scale) : Transform.Identity;

@@ -14,6 +14,15 @@ public static class ThemeManager
     private static readonly ResourceDictionary Overrides = new();
     private static readonly Dictionary<string, Brush> MaterialSources = new(StringComparer.Ordinal);
     private static double _opacity = 0.9;
+    /// <summary>Share of the surface opacity the dock tint keeps; lower while a blurred backdrop carries the glass.</summary>
+    private static double _dockGlassScale = 1.0;
+
+    /// <summary>With a blurred backdrop behind the dock, its own tint is lighter so the two do not stack into a dark slab.</summary>
+    public static void SetDockGlass(bool blurred)
+    {
+        _dockGlassScale = blurred ? 0.5 : 1.0;
+        if (_palette is not null) SetSurfaceOpacity(_opacity);
+    }
 
     public static void Apply(AppTheme theme, double opacity = 0.9)
     {
@@ -61,7 +70,8 @@ public static class ThemeManager
         Materials["SettingsGlassMaterial"] = WithAlpha((Brush)settingsSource, alpha);
         foreach (var key in MaterialKeys)
         {
-            Materials[key] = WithAlpha(MaterialSources.TryGetValue(key, out var custom) ? custom : (Brush)_palette[key], alpha);
+            var keyAlpha = key == "DockMaterial" ? (byte)Math.Round(opacity * _dockGlassScale * 255) : alpha;
+            Materials[key] = WithAlpha(MaterialSources.TryGetValue(key, out var custom) ? custom : (Brush)_palette[key], keyAlpha);
         }
     }
 
