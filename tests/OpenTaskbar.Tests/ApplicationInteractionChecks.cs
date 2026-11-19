@@ -85,18 +85,19 @@ internal static class ApplicationInteractionChecks
                 Flush();
                 var firstSurface = (Border)firstButton.Template.FindName("Surface", firstButton);
                 var secondSurface = (Border)secondButton.Template.FindName("Surface", secondButton);
-                Check(firstSurface.Background == application.FindResource("SurfaceSelectedStrong"),
-                    "The foreground application must have a background without keyboard focus.");
+                var firstGlow = (FrameworkElement)firstButton.Template.FindName("ActiveIndicatorGlow", firstButton);
+                var secondGlow = (FrameworkElement)secondButton.Template.FindName("ActiveIndicatorGlow", secondButton);
+                Check(IsTransparent(firstSurface.Background) && firstGlow.Visibility == Visibility.Visible,
+                    "The foreground application must be marked by its indicator, without a box behind the icon.");
                 Check(secondButton.IsKeyboardFocused && IsTransparent(secondSurface.Background),
                     "Keyboard focus on a background app must not create an active background.");
-                Check(secondSurface.BorderBrush == application.FindResource("StrokeFocus"),
-                    "Keyboard navigation must retain a visible focus outline.");
+                Check(IsTransparent(secondSurface.BorderBrush) && secondButton.FocusVisualStyle is not null,
+                    "Focus must not draw an outline after a click; keyboard navigation keeps its own focus visual.");
                 first.IsForeground = false;
                 second.IsForeground = true;
                 Flush();
-                Check(IsTransparent(firstSurface.Background)
-                    && secondSurface.Background == application.FindResource("SurfaceSelectedStrong"),
-                    "Switching applications must move the foreground background immediately.");
+                Check(firstGlow.Visibility != Visibility.Visible && secondGlow.Visibility == Visibility.Visible,
+                    "Switching applications must move the foreground indicator immediately.");
                 second.IsForeground = false;
                 Flush();
                 Check(secondButton.IsKeyboardFocused && IsTransparent(secondSurface.Background),

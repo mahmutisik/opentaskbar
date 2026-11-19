@@ -46,14 +46,14 @@ public sealed class AiUsageWidget : DockWidget
     public AiUsageWidget(Func<AiProviders, CancellationToken, Task<(AiUsageReport?, string?)>>? loader = null)
     {
         _loader = loader;
-        _summary = AddCard("AI", null);
-        _claude = AddCard("Claude", "LogoClaude");
-        _codex = AddCard("Codex", "LogoCodex");
-        _antigravity = AddCard("Antigravity", "LogoAntigravity");
-        _openCode = AddCard("OpenCode", "LogoOpenCode");
-        _copilot = AddCard("Copilot", "LogoCopilot");
-        _deepSeek = AddCard("DeepSeek", "LogoDeepSeek");
-        _openRouter = AddCard("OpenRouter", "LogoOpenRouter");
+        _summary = AddCard("AI", null, AiProviders.None);
+        _claude = AddCard("Claude", "LogoClaude", AiProviders.Claude);
+        _codex = AddCard("Codex", "LogoCodex", AiProviders.Codex);
+        _antigravity = AddCard("Antigravity", "LogoAntigravity", AiProviders.Antigravity);
+        _openCode = AddCard("OpenCode", "LogoOpenCode", AiProviders.OpenCode);
+        _copilot = AddCard("Copilot", "LogoCopilot", AiProviders.Copilot);
+        _deepSeek = AddCard("DeepSeek", "LogoDeepSeek", AiProviders.DeepSeek);
+        _openRouter = AddCard("OpenRouter", "LogoOpenRouter", AiProviders.OpenRouter);
         _flyout.Closed += (_, _) => _countdowns.Clear();
         Content = _cards;
         Render();
@@ -356,7 +356,7 @@ public sealed class AiUsageWidget : DockWidget
         return string.Join(" · ", parts);
     }
 
-    private Card AddCard(string name, string? logoKey)
+    private Card AddCard(string name, string? logoKey, AiProviders provider)
     {
         var logo = new System.Windows.Shapes.Path { Width = LogoSize, Height = LogoSize, Stretch = Stretch.Uniform,
             Margin = new Thickness(0, 0, Gap, 0), VerticalAlignment = VerticalAlignment.Center, IsHitTestVisible = false };
@@ -371,6 +371,7 @@ public sealed class AiUsageWidget : DockWidget
         var row = new StackPanel { Orientation = Orientation.Horizontal, Children = { logo, label, ring } };
         var button = new Button { Content = row };
         button.SetResourceReference(StyleProperty, "WidgetCardButton");
+        WidgetTint.Apply(button, WidgetTint.ForAiProvider(provider));
         button.Click += (_, _) => _flyout.Toggle(button, () =>
         {
             _flyoutHost.Content = BuildFlyout(_countdowns);

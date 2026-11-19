@@ -3,6 +3,31 @@ namespace OpenTaskbar.Services;
 /// <summary>Converts a drop position in the visible dock into the saved item order.</summary>
 internal static class DockItemOrdering
 {
+    /// <summary>
+    /// Drop index for a pointer position along the dock: the number of visible items, the dragged one included,
+    /// whose center lies before the pointer. This is the index <see cref="MoveVisibleItem"/> expects.
+    /// </summary>
+    internal static int InsertionIndex(IReadOnlyList<(double Start, double Size)> slots, double pointer)
+    {
+        var index = 0;
+        foreach (var (start, size) in slots)
+        {
+            if (pointer > start + size / 2) index++;
+            else break;
+        }
+        return index;
+    }
+
+    /// <summary>How far an item slides aside while another is dragged, so the dragged item's landing slot opens.</summary>
+    internal static double SlideFor(int item, int dragged, int insertionIndex, double draggedSize)
+    {
+        if (item == dragged) return 0;
+        var destination = insertionIndex > dragged ? insertionIndex - 1 : insertionIndex;
+        if (item > dragged && item <= destination) return -draggedSize;
+        if (item < dragged && item >= destination) return draggedSize;
+        return 0;
+    }
+
     internal static IReadOnlyList<string> MoveVisibleItem(
         IReadOnlyList<string> savedOrder,
         IReadOnlyList<string> visibleOrder,

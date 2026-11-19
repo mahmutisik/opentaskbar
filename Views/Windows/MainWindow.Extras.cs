@@ -299,7 +299,7 @@ public partial class MainWindow
     {
         if (TryGetDockItemToken(e, out var droppedToken))
         {
-            MoveDockItem(droppedToken, GetDockInsertionIndex(e));
+            DropDockItem(droppedToken, e);
             e.Handled = true;
             return;
         }
@@ -519,7 +519,7 @@ public partial class MainWindow
         var animDuration = TimeSpan.FromMilliseconds(130);
         var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
 
-        button.Opacity = 0.55;
+        button.Opacity = 0.85;
         if (scale is not null && translate is not null && _preferences.Current.AnimationsEnabled && SystemParameters.ClientAreaAnimation)
         {
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.10, animDuration) { EasingFunction = easeOut });
@@ -535,6 +535,7 @@ public partial class MainWindow
         finally
         {
             button.Opacity = 1.0;
+            CancelLiveDrag();
             ResetDisplacements();
             if (scale is not null && translate is not null)
             {
@@ -612,7 +613,7 @@ public partial class MainWindow
     {
         if (TryGetDockItemToken(e, out var droppedToken))
         {
-            MoveDockItem(droppedToken, GetDockInsertionIndex(e));
+            DropDockItem(droppedToken, e);
             e.Handled = true;
             return;
         }

@@ -152,16 +152,43 @@
             </Border>
 
             <!-- Modern Battery Card -->
-            <Border x:Name="BatteryCard" Style="{StaticResource WidgetCardBorder}" Padding="11,0" Visibility="Collapsed">
+            <Border x:Name="BatteryCard" Padding="11,0" Visibility="Collapsed">
+                <Border.Style>
+                    <Style TargetType="Border" BasedOn="{StaticResource WidgetCardBorder}">
+                        <Setter Property="Background" Value="{DynamicResource WidgetTintTealFill}" />
+                        <Setter Property="BorderBrush" Value="{DynamicResource WidgetTintTealStroke}" />
+                        <Style.Triggers>
+                            <DataTrigger Binding="{Binding IsBatteryLow}" Value="True">
+                                <Setter Property="Background" Value="{DynamicResource WidgetTintRedFill}" />
+                                <Setter Property="BorderBrush" Value="{DynamicResource WidgetTintRedStroke}" />
+                            </DataTrigger>
+                        </Style.Triggers>
+                    </Style>
+                </Border.Style>
                 <Grid VerticalAlignment="Center">
                     <Grid.ColumnDefinitions>
                         <ColumnDefinition Width="Auto" />
                         <ColumnDefinition Width="*" />
                     </Grid.ColumnDefinitions>
-                    <Grid Grid.Column="0" Margin="0,0,8,0" VerticalAlignment="Center">
+                    <Grid Grid.Column="0" Width="18" Height="18" Margin="0,0,8,0" VerticalAlignment="Center">
                         <ContentControl Style="{StaticResource WidgetIcon}" Content="{StaticResource IconBattery}"
                                         Width="18" Height="18"
                                         Foreground="{DynamicResource WidgetAccent}" />
+                        <!-- Charging bolt, centred in the battery body (the tip sits on the right). -->
+                        <Path Data="{StaticResource IconZap}" Fill="{DynamicResource WidgetAccent}" Stretch="Fill"
+                              Width="6" Height="9" HorizontalAlignment="Left" VerticalAlignment="Top" Margin="5.7,4.5,0,0"
+                              AutomationProperties.Name="{local:Loc Charging}" IsHitTestVisible="False">
+                            <Path.Style>
+                                <Style TargetType="Path">
+                                    <Setter Property="Visibility" Value="Collapsed" />
+                                    <Style.Triggers>
+                                        <DataTrigger Binding="{Binding IsCharging}" Value="True">
+                                            <Setter Property="Visibility" Value="Visible" />
+                                        </DataTrigger>
+                                    </Style.Triggers>
+                                </Style>
+                            </Path.Style>
+                        </Path>
                     </Grid>
                     <TextBlock Grid.Column="1" Text="{Binding Value}" Style="{StaticResource WidgetText}"
                                FontSize="13.5" FontWeight="SemiBold" VerticalAlignment="Center"

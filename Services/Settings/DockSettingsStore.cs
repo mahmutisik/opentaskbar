@@ -112,7 +112,7 @@ public sealed class DockSettingsStore
         && settings.FocusMinutes is >= 1 and <= 90
         && settings.FocusBreakMinutes is >= 1 and <= 30
         && settings.FocusSessions is >= 1 and <= 8
-        && double.IsFinite(settings.SurfaceOpacity) && settings.SurfaceOpacity is >= 0.6 and <= 1
+        && double.IsFinite(settings.SurfaceOpacity) && settings.SurfaceOpacity is >= 0.3 and <= 1
         && double.IsFinite(settings.DockScale) && settings.DockScale is >= 0.75 and <= 1.5
         && settings.PinOrder?.Any(string.IsNullOrWhiteSpace) != true
         && settings.PinOrder?.Distinct(StringComparer.OrdinalIgnoreCase).Count() == settings.PinOrder?.Count

@@ -30,9 +30,21 @@
             </Setter.Value>
         </Setter>
     </Style>
+    <!-- Drawn only when focus arrives from the keyboard, never after a mouse click. -->
+    <Style x:Key="DockKeyboardFocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border CornerRadius="{StaticResource ControlRadius}" BorderThickness="1"
+                            BorderBrush="{DynamicResource StrokeFocus}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <Style x:Key="DockButton" TargetType="Button">
         <Setter Property="Background" Value="Transparent" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource DockKeyboardFocusVisual}" />
         <Setter Property="BorderThickness" Value="0" />
         <Setter Property="Width" Value="{DynamicResource DockCellSize}" />
         <Setter Property="Height" Value="{DynamicResource DockCellHeight}" />
@@ -75,15 +87,11 @@
                         <Trigger Property="IsEnabled" Value="False">
                             <Setter TargetName="Surface" Property="Opacity" Value="0.48" />
                         </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource StrokeFocus}" />
-                        </Trigger>
                         <DataTrigger Binding="{Binding IsRunning}" Value="True">
                             <Setter TargetName="ActiveIndicator" Property="Visibility" Value="Visible" />
                             <Setter TargetName="ActiveIndicator" Property="Opacity" Value="0.75" />
                         </DataTrigger>
                         <DataTrigger Binding="{Binding IsForeground}" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SurfaceSelectedStrong}" />
                             <Setter TargetName="ActiveIndicatorGlow" Property="Visibility" Value="Visible" />
                             <Setter TargetName="ActiveIndicator" Property="Visibility" Value="Visible" />
                             <Setter TargetName="ActiveIndicator" Property="Opacity" Value="1.0" />
@@ -105,6 +113,9 @@
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
                     <Grid Width="{TemplateBinding Width}" Height="{TemplateBinding Height}">
+                        <!-- Same soft light pool as the app icons; no hard outline on hover. -->
+                        <Ellipse x:Name="HoverGlow" Margin="-6,0,-6,-4" Fill="{DynamicResource IconHoverGlow}"
+                                 Opacity="0" IsHitTestVisible="False" />
                         <Border x:Name="StartTile" Margin="3,3,3,3"
                                 CornerRadius="10"
                                 Background="Transparent"
@@ -115,8 +126,7 @@
                     </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="StartTile" Property="Background" Value="{DynamicResource StartTileHover}" />
-                            <Setter TargetName="StartTile" Property="BorderBrush" Value="{DynamicResource StrokeFocus}" />
+                            <Setter TargetName="HoverGlow" Property="Opacity" Value="1" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="StartTile" Property="Background" Value="{DynamicResource StartTilePressed}" />

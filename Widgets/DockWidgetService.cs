@@ -11,6 +11,9 @@ public sealed class DockWidgetService(TimeProvider timeProvider)
     private const byte UnknownBatteryLifePercent = 255;
     private const byte NoSystemBattery = 128;
     private const byte ChargingBatteryFlag = 8;
+    private const byte OnlineAcLine = 1;
+    /// <summary>Same threshold as the battery ring of the system stats widget.</summary>
+    internal const int LowBatteryPercent = 15;
 
     public const string ClockId = "Clock";
     public const string DateId = "Date";
@@ -94,6 +97,12 @@ public sealed class DockWidgetService(TimeProvider timeProvider)
                     timed.Refresh();
                 else if (definition.Read is not null)
                     widget.Value = definition.Read(culture);
+                if (widget.Id == BatteryId)
+                {
+                    var (charging, low) = ReadBatteryState();
+                    widget.IsCharging = charging;
+                    widget.IsBatteryLow = low;
+                }
             }
         }
     }
@@ -103,11 +112,21 @@ public sealed class DockWidgetService(TimeProvider timeProvider)
         if (!GetSystemPowerStatus(out var status) || status.BatteryLifePercent == UnknownBatteryLifePercent
             || status.BatteryFlag == NoSystemBattery)
             return UiText.Get("SystemDataUnavailable");
-        var percent = $"{status.BatteryLifePercent}%";
-        return (status.BatteryFlag & ChargingBatteryFlag) != 0
-            ? $"{percent} · {UiText.Get("Charging")}"
-            : percent;
+        // Charging is shown as a bolt on the battery icon, not as text.
+        return $"{status.BatteryLifePercent}%";
     }
+
+    private static (bool Charging, bool Low) ReadBatteryState()
+    {
+        if (!GetSystemPowerStatus(out var status) || status.BatteryFlag == NoSystemBattery
+            || status.BatteryLifePercent == UnknownBatteryLifePercent)
+            return (false, false);
+        var charging = (status.BatteryFlag & ChargingBatteryFlag) != 0;
+        return (charging, IsLowBattery(status.BatteryLifePercent, status.ACLineStatus == OnlineAcLine));
+    }
+
+    /// <summary>A warning only while the device runs on battery; plugged in, a low level is already being handled.</summary>
+    internal static bool IsLowBattery(int percent, bool pluggedIn) => percent <= LowBatteryPercent && !pluggedIn;
 
     [StructLayout(LayoutKind.Sequential)]
     private struct SystemPowerStatus

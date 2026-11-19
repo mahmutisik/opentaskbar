@@ -99,7 +99,6 @@ public partial class MainWindow
         // Widgets are designed for a horizontal shelf; side docks keep only the apps.
         DockScrollViewer.HoverHeadroom = vertical ? 0 : DockMetrics.Headroom;
         WidgetIsland.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
-        DockSheen.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
         LeftResizeThumb.Visibility = RightResizeThumb.Visibility = vertical ? Visibility.Collapsed : Visibility.Visible;
         foreach (var button in GetAllDockButtons())
         {

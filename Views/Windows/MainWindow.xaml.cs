@@ -122,6 +122,7 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         DockContents.LayoutUpdated += (_, _) => InvalidateMagnificationTargets();
+        InitializeLiveDrag();
         _widgetPanel = new WidgetPanelHost(this);
         _widgetPanel.IsOpenChanged += WidgetPanel_IsOpenChanged;
         _widgetPanel.OperationFailed += ReportError;
@@ -182,6 +183,7 @@ public partial class MainWindow : Window
         _widgetCoordinator.CreateWidgetContextMenu = _ => (ContextMenu)FindResource("WidgetContextMenu");
         _widgetCoordinator.HoverActiveChanged += _ => _autoHideController?.EvaluateState();
         _widgetCoordinator.ExternalLayout = true;
+        _widgetCoordinator.WidgetDragEnded += CancelLiveDrag;
         _widgetCoordinator.WidgetsPlaced += () =>
         {
             ApplyStartPlacement();
@@ -2052,7 +2054,16 @@ public partial class MainWindow : Window
             if (target.Tag is string widgetId)
             {
                 if (Mouse.Captured is UIElement captured) captured.ReleaseMouseCapture();
-                DragDrop.DoDragDrop(target, new WidgetCoordinator.WidgetDragPayload(widgetId), DragDropEffects.Move);
+                target.Opacity = 0.85;
+                try
+                {
+                    DragDrop.DoDragDrop(target, new WidgetCoordinator.WidgetDragPayload(widgetId), DragDropEffects.Move);
+                }
+                finally
+                {
+                    target.Opacity = 1.0;
+                    CancelLiveDrag();
+                }
             }
         }
     }
@@ -2366,12 +2377,17 @@ public partial class MainWindow : Window
         DockFrame.Padding = new Thickness(10, profile.VerticalPadding, 10, profile.VerticalPadding);
         DockFrame.CornerRadius = new CornerRadius(radius);
         DockInnerBevel.CornerRadius = new CornerRadius(Math.Max(0, radius - 1));
-        // The sheen sits on the inner top edge of the glass frame, inset past the rounded corners.
-        var sheenHorizontal = Math.Max(4, radius - 8);
-        DockSheen.Margin = new Thickness(sheenHorizontal, -profile.VerticalPadding + 1, sheenHorizontal, 0);
+        DockInnerShade.CornerRadius = new CornerRadius(Math.Max(0, radius - 1));
+        // The soft shadow rings sit outside the frame; each follows the corner radius by its own offset so a squarer
+        // dock does not keep a round halo.
+        DockShadow1.CornerRadius = new CornerRadius(radius + 2);
+        DockShadow2.CornerRadius = new CornerRadius(radius + 5);
+        DockShadow3.CornerRadius = new CornerRadius(radius + 8);
+        DockShadow4.CornerRadius = new CornerRadius(radius + 12);
         var bevelH = -9;
         var bevelV = -profile.VerticalPadding + 1;
         DockInnerBevel.Margin = IsVertical ? new Thickness(bevelV, bevelH, bevelV, bevelH) : new Thickness(bevelH, bevelV, bevelH, bevelV);
+        DockInnerShade.Margin = DockInnerBevel.Margin;
         if (IsVertical) DockFrame.Padding = new Thickness(profile.VerticalPadding, 10, profile.VerticalPadding, 10);
         var scale = profile.WidgetScale;
         var widgetTransform = Math.Abs(scale - 1) > 0.001 ? new ScaleTransform(scale, scale) : Transform.Identity;

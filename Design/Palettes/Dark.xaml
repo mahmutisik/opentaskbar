@@ -49,6 +49,13 @@
     <SolidColorBrush x:Key="SurfaceSelected" Color="#12FFFFFF" />
     <SolidColorBrush x:Key="DockWidgetSurface" Color="#38252B34" />
     <SolidColorBrush x:Key="SurfaceSelectedStrong" Color="#2A7CC4FF" />
+    <LinearGradientBrush x:Key="DockInnerShade" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#16FFFFFF" Offset="0" />
+        <GradientStop Color="#06FFFFFF" Offset="0.22" />
+        <GradientStop Color="#00FFFFFF" Offset="0.4" />
+        <GradientStop Color="#00000000" Offset="0.55" />
+        <GradientStop Color="#30000000" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="SurfaceDanger" Color="#FFC43846" />
     <SolidColorBrush x:Key="NotificationBrush" Color="#FFFF6673" />
     <SolidColorBrush x:Key="IndicatorBrush" Color="#B0CBD5E1" />
@@ -56,11 +63,11 @@
         <GradientStop Color="#FF5EEAD4" Offset="0" />
         <GradientStop Color="#FF38BDF8" Offset="1" />
     </LinearGradientBrush>
-    <!-- Midnight Obsidian glass with a rich translucent optical body. -->
+    <!-- Frosted glass: a light neutral gray, so the wallpaper's own color carries through instead of a dark shade. -->
     <LinearGradientBrush x:Key="DockMaterial" StartPoint="0,0" EndPoint="0,1">
-        <GradientStop Color="#CA141A23" Offset="0" />
-        <GradientStop Color="#D910141B" Offset="0.45" />
-        <GradientStop Color="#E4090C12" Offset="1" />
+        <GradientStop Color="#CA565D68" Offset="0" />
+        <GradientStop Color="#D9484E58" Offset="0.45" />
+        <GradientStop Color="#E43C414A" Offset="1" />
     </LinearGradientBrush>
     <!-- Fresnel optical rim light: bright specular highlight on top, grounded ambient occlusion at bottom. -->
     <LinearGradientBrush x:Key="DockBorderMaterial" StartPoint="0,0" EndPoint="0,1">
@@ -68,7 +75,7 @@
         <GradientStop Color="#24FFFFFF" Offset="0.12" />
         <GradientStop Color="#10FFFFFF" Offset="0.45" />
         <GradientStop Color="#08FFFFFF" Offset="0.85" />
-        <GradientStop Color="#6E000000" Offset="1" />
+        <GradientStop Color="#48000000" Offset="1" />
     </LinearGradientBrush>
     <SolidColorBrush x:Key="SettingsBackground" Color="#FF181A1E" />
     <SolidColorBrush x:Key="SettingsControl" Color="#FF22252A" />
@@ -80,9 +87,10 @@
     <SolidColorBrush x:Key="SettingsSidebarOverlay" Color="#2410141A" />
     <SolidColorBrush x:Key="CaptionCloseForeground" Color="#FFFFFFFF" />
     <!-- Dock widgets -->
+    <!-- Neutral glass card for widgets without a colour of their own (see WidgetTint). -->
     <SolidColorBrush x:Key="WidgetCard" Color="#14FFFFFF" />
     <SolidColorBrush x:Key="WidgetCardHover" Color="#24FFFFFF" />
-    <SolidColorBrush x:Key="WidgetCardStroke" Color="#1EFFFFFF" />
+    <SolidColorBrush x:Key="WidgetCardStroke" Color="#24FFFFFF" />
     <SolidColorBrush x:Key="WidgetTrack" Color="#2EFFFFFF" />
     <SolidColorBrush x:Key="WidgetAccent" Color="#FF2DD4BF" />
     <SolidColorBrush x:Key="WidgetAccentText" Color="#FFFFFFFF" />

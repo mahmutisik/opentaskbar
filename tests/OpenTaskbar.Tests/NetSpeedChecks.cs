@@ -19,6 +19,8 @@ internal static class NetSpeedChecks
         CheckBytesFormatting(Check);
         CheckWidgetLifecycleAndCalculations(Check);
         CheckRateCalculation(Check);
+        CheckStableWidth(app, Check);
+        CheckCardTints(app, Check);
         CheckHoverFlyoutAndInteractions(Check);
         CheckSpeedTestExecution(Check);
 
@@ -58,8 +60,8 @@ internal static class NetSpeedChecks
     {
         var widget = new NetSpeedWidget();
         check(widget.SupportsCompactMode, "NetSpeedWidget must support compact mode.");
-        check(widget.CompactWidthEstimate == 68, "Compact width estimate must be 68 DIP.");
-        check(widget.FullWidthEstimate == 140, "Full width estimate must be 140 DIP.");
+        check(widget.CompactWidthEstimate == 89, "Compact width estimate must be 89 DIP.");
+        check(widget.FullWidthEstimate == 168, "Full width estimate must be 168 DIP.");
 
         long fakeReceived = 100_000_000;
         long fakeSent = 20_000_000;
@@ -105,6 +107,48 @@ internal static class NetSpeedChecks
 
         var burst = NetSpeedWidget.ComputeRates(0, 0, 10_000, 1_000, 0, 10_010);
         check(Math.Abs(burst.Download - 5_000) < 0.001, "Back-to-back samples must use at least 0.2 s to avoid spikes.");
+    }
+
+    // The reading changes every second; its width must not, or the whole dock resizes with it.
+    private static void CheckStableWidth(Application app, Action<bool, string> check)
+    {
+        var text = new TextBlock { FontSize = 11.5, FontWeight = FontWeights.SemiBold, Style = (Style)app.FindResource("WidgetText") };
+        double WidthOf(double bytesPerSecond)
+        {
+            text.Text = NetSpeedWidget.FormatSpeed(bytesPerSecond);
+            text.Measure(new Size(double.PositiveInfinity, double.PositiveInfinity));
+            return text.DesiredSize.Width;
+        }
+
+        NetSpeedWidget.ReserveSpeedWidth(text);
+        var idle = WidthOf(0);
+        check(new[] { 500, 1024 * 45.4, 1024 * 450, 1024 * 1024 * 88.8, 1024 * 1024 * 250, 1024L * 1024 * 1024 * 2.5 }
+                .All(rate => Math.Abs(WidthOf(rate) - idle) < 0.01),
+            "Every speed reading must take the same reserved width.");
+    }
+
+    private static void CheckCardTints(Application app, Action<bool, string> check)
+    {
+        foreach (var tint in new[] { WidgetTint.Teal, WidgetTint.Sky, WidgetTint.Coral, WidgetTint.Violet, WidgetTint.Amber, WidgetTint.Slate, WidgetTint.Red, WidgetTint.Indigo })
+        {
+            check(app.TryFindResource($"WidgetTint{tint}Fill") is System.Windows.Media.Brush
+                    && app.TryFindResource($"WidgetTint{tint}Stroke") is System.Windows.Media.Brush,
+                $"The {tint} widget tint must define its fill and stroke.");
+        }
+
+        var widget = new NetSpeedWidget();
+        check(widget.Content is Button card && ReferenceEquals(card.Background, app.FindResource("WidgetTintSkyFill")),
+            "The net speed card must carry its sky tint.");
+        check(WidgetTint.ForWeatherIcon("IconSun") == WidgetTint.Amber && WidgetTint.ForWeatherIcon("IconCloudRain") == WidgetTint.Sky
+                && WidgetTint.ForWeatherIcon("IconCloud") == WidgetTint.Slate,
+            "Weather cards must take the colour of their sky.");
+        check(WidgetTint.ForAiProvider(OpenTaskbar.Models.AiProviders.Claude) == WidgetTint.Coral
+                && WidgetTint.ForAiProvider(OpenTaskbar.Models.AiProviders.DeepSeek) == WidgetTint.Indigo
+                && WidgetTint.ForAiProvider(OpenTaskbar.Models.AiProviders.None) is null,
+            "Each AI provider card must carry its own colour; the summary card stays neutral.");
+        check(OpenTaskbar.Services.DockWidgetService.IsLowBattery(15, pluggedIn: false) && !OpenTaskbar.Services.DockWidgetService.IsLowBattery(16, pluggedIn: false)
+                && !OpenTaskbar.Services.DockWidgetService.IsLowBattery(5, pluggedIn: true),
+            "The battery card turns red only at 15% or less while running on battery.");
     }
 
     private static void CheckHoverFlyoutAndInteractions(Action<bool, string> check)

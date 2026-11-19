@@ -448,8 +448,9 @@ public partial class SystemStatsWidget : DockWidget
         BatteryRing.Value = Math.Clamp(battery.Percent / 100.0, 0, 1);
         BatteryRing.Text = battery.Percent.ToString(CultureInfo.InvariantCulture);
         BatteryRing.Caption = lang == AppLanguage.Turkish ? "PİL" : "BAT";
-        BatteryRing.SetResourceReference(RingMeter.ValueBrushProperty,
-            battery.Percent <= LowBatteryPercent && !battery.PluggedIn ? "WidgetFocusAccent" : "WidgetAccent");
+        var low = DockWidgetService.IsLowBattery(battery.Percent, battery.PluggedIn);
+        BatteryRing.SetResourceReference(RingMeter.ValueBrushProperty, low ? "WidgetFocusAccent" : "WidgetAccent");
+        WidgetTint.Apply(BatteryButton, low ? WidgetTint.Red : WidgetTint.Teal);
         ChargingIcon.Visibility = battery.Charging ? Visibility.Visible : Visibility.Collapsed;
         BatteryButton.ToolTip = $"{UiText.Get(battery.Charging ? "BatteryCharging" : "Battery")}: {UiText.Format("Percent", battery.Percent)}";
     }

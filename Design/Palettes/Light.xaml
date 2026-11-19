@@ -48,6 +48,13 @@
     <SolidColorBrush x:Key="SurfaceSelected" Color="#0C000000" />
     <SolidColorBrush x:Key="DockWidgetSurface" Color="#AFFFFFFF" />
     <SolidColorBrush x:Key="SurfaceSelectedStrong" Color="#1F1F6FD1" />
+    <LinearGradientBrush x:Key="DockInnerShade" StartPoint="0,0" EndPoint="0,1">
+        <GradientStop Color="#48FFFFFF" Offset="0" />
+        <GradientStop Color="#14FFFFFF" Offset="0.22" />
+        <GradientStop Color="#00FFFFFF" Offset="0.4" />
+        <GradientStop Color="#00000000" Offset="0.55" />
+        <GradientStop Color="#12000000" Offset="1" />
+    </LinearGradientBrush>
     <SolidColorBrush x:Key="SurfaceDanger" Color="#FFC43846" />
     <SolidColorBrush x:Key="NotificationBrush" Color="#FFD22D42" />
     <SolidColorBrush x:Key="IndicatorBrush" Color="#700F172A" />
@@ -80,7 +87,7 @@
     <!-- Dock widgets -->
     <SolidColorBrush x:Key="WidgetCard" Color="#0D000000" />
     <SolidColorBrush x:Key="WidgetCardHover" Color="#18000000" />
-    <SolidColorBrush x:Key="WidgetCardStroke" Color="#16000000" />
+    <SolidColorBrush x:Key="WidgetCardStroke" Color="#18000000" />
     <SolidColorBrush x:Key="WidgetTrack" Color="#1F000000" />
     <SolidColorBrush x:Key="WidgetAccent" Color="#FF0D9488" />
     <SolidColorBrush x:Key="WidgetAccentText" Color="#FFFFFFFF" />

@@ -274,15 +274,15 @@
                                         SizeChanged="WidgetStrip_SizeChanged" />
                         </Border>
                     </Grid>
+                    <!-- Inner depth: a faint lit top and a shaded bottom inside the glass, like an inset shadow. -->
+                    <Border x:Name="DockInnerShade" Background="{DynamicResource DockInnerShade}"
+                            CornerRadius="{StaticResource DockInnerRadius}"
+                            Margin="-9,-3,-9,-3" IsHitTestVisible="False" />
                     <!-- Dual-layer optical glass bevel refraction highlight line -->
                     <Border x:Name="DockInnerBevel" BorderThickness="1"
                             BorderBrush="{DynamicResource DockInnerBevelMaterial}"
                             CornerRadius="{StaticResource DockInnerRadius}"
                             Margin="-9,-3,-9,-3" IsHitTestVisible="False" />
-                    <!-- Specular ambient sheen curving across the top half of the glass dock -->
-                    <Border x:Name="DockSheen" Height="20" VerticalAlignment="Top" Margin="6,-3,6,0"
-                            CornerRadius="{StaticResource DockSheenRadius}"
-                            Background="{DynamicResource DockHighlight}" IsHitTestVisible="False" />
                 </Grid>
             </Border>
             <Thumb x:Name="LeftResizeThumb" HorizontalAlignment="Left" VerticalAlignment="Stretch"

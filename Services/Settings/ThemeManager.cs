@@ -53,7 +53,7 @@ public static class ThemeManager
 
     public static void SetSurfaceOpacity(double opacity)
     {
-        if (!double.IsFinite(opacity) || opacity is < 0.6 or > 1) throw new ArgumentOutOfRangeException(nameof(opacity));
+        if (!double.IsFinite(opacity) || opacity is < 0.3 or > 1) throw new ArgumentOutOfRangeException(nameof(opacity));
         if (_palette is null) throw new InvalidOperationException("The theme must be initialized before its materials.");
         _opacity = opacity;
         var alpha = (byte)Math.Round(opacity * 255);

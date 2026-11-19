@@ -358,7 +358,7 @@
 
                             <Border Style="{StaticResource SettingsRow}"><DockPanel>
                                 <StackPanel DockPanel.Dock="Right" Orientation="Horizontal" Width="240" VerticalAlignment="Center">
-                                    <Slider x:Name="OpacitySlider" Width="176" Minimum="60" Maximum="100" Value="90" TickFrequency="5"
+                                    <Slider x:Name="OpacitySlider" Width="176" Minimum="30" Maximum="100" Value="90" TickFrequency="5"
                                             IsSnapToTickEnabled="True" SmallChange="5" LargeChange="10" Style="{StaticResource SettingsOpacitySlider}"
                                             AutomationProperties.Name="{local:Loc SurfaceOpacity}" AutomationProperties.HelpText="{local:Loc SurfaceOpacityHelp}"
                                             ValueChanged="OpacitySlider_ValueChanged" VerticalAlignment="Center" />

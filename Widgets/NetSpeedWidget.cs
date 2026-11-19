@@ -33,8 +33,9 @@ public sealed class NetSpeedWidget : DockWidget
 
     public override bool SupportsCompactMode => true;
     public override int ShrinkPriority => 30;
-    public override double CompactWidthEstimate => 68;
-    public override double FullWidthEstimate => 140;
+    // Padding, arrow and the reserved reading width (see ReserveSpeedWidth).
+    public override double CompactWidthEstimate => 89;
+    public override double FullWidthEstimate => 168;
 
     private readonly Button _cardButton;
     private readonly ContentControl _downIcon;
@@ -159,7 +160,10 @@ public sealed class NetSpeedWidget : DockWidget
             Padding = new Thickness(10, 0, 10, 0)
         };
         _cardButton.SetResourceReference(StyleProperty, "WidgetCardButton");
+        WidgetTint.Apply(_cardButton, WidgetTint.Sky);
         _cardButton.Click += CardButton_Click;
+        _downloadText.Loaded += (_, _) => ReserveSpeedWidth(_downloadText);
+        _uploadText.Loaded += (_, _) => ReserveSpeedWidth(_uploadText);
 
         Content = _cardButton;
         Localize();
@@ -245,6 +249,21 @@ public sealed class NetSpeedWidget : DockWidget
         var deltaReceived = received >= lastReceived ? received - lastReceived : 0;
         var deltaSent = sent >= lastSent ? sent - lastSent : 0;
         return (deltaReceived / elapsedSeconds, deltaSent / elapsedSeconds, deltaReceived, deltaSent);
+    }
+
+    /// <summary>Readings of every unit at their widest; FormatSpeed shows at most three digits.</summary>
+    private static readonly string[] WidestSpeedReadings = ["888 B/s", "88.8 KB/s", "888 KB/s", "88.8 MB/s", "888 MB/s", "8.88 GB/s"];
+
+    /// <summary>
+    /// Reserves the width of the widest reading, so the card, and the dock around it, keeps one size while the
+    /// speed changes every second.
+    /// </summary>
+    internal static void ReserveSpeedWidth(TextBlock text)
+    {
+        var typeface = new Typeface(text.FontFamily, text.FontStyle, text.FontWeight, text.FontStretch);
+        var pixelsPerDip = VisualTreeHelper.GetDpi(text).PixelsPerDip;
+        text.MinWidth = Math.Ceiling(WidestSpeedReadings.Max(reading => new FormattedText(reading, CultureInfo.CurrentUICulture,
+            FlowDirection.LeftToRight, typeface, text.FontSize, Brushes.Black, pixelsPerDip).WidthIncludingTrailingWhitespace));
     }
 
     protected override void OnCompactChanged(bool compact)

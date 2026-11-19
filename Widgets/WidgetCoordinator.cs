@@ -91,6 +91,9 @@ public sealed class WidgetCoordinator : IDisposable
     /// <summary>When true, the host window owns widget placement so all dock item kinds share one strip.</summary>
     public bool ExternalLayout { get; set; }
 
+    /// <summary>Raised when a widget drag ends, dropped or not, so the host can end its live drag.</summary>
+    public event Action? WidgetDragEnded;
+
     public IReadOnlyDictionary<string, DockWidget> ActiveWidgets => _widgets
         .Where(slot => slot.Widget is not null)
         .ToDictionary(slot => slot.Id, slot => slot.Widget!);
@@ -309,7 +312,7 @@ public sealed class WidgetCoordinator : IDisposable
 
     private void AnimateWidgetDrag(DockWidget widget, string widgetId)
     {
-        widget.Opacity = 0.55;
+        widget.Opacity = 0.85;
         var (scale, translate) = GetWidgetTransforms(widget);
         var animDuration = TimeSpan.FromMilliseconds(130);
         var easeOut = new CubicEase { EasingMode = EasingMode.EaseOut };
@@ -325,6 +328,7 @@ public sealed class WidgetCoordinator : IDisposable
         finally
         {
             widget.Opacity = 1.0;
+            WidgetDragEnded?.Invoke();
             ResetWidgetDisplacements();
             scale.BeginAnimation(ScaleTransform.ScaleXProperty, new DoubleAnimation(1.0, animDuration) { EasingFunction = easeOut });
             scale.BeginAnimation(ScaleTransform.ScaleYProperty, new DoubleAnimation(1.0, animDuration) { EasingFunction = easeOut });

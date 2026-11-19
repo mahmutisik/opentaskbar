@@ -149,6 +149,60 @@
         </Setter>
     </Style>
 
+    <!-- Colour-coded widget cards (WidgetTint): a soft diagonal tint and a matching rim, like the clock card. -->
+    <LinearGradientBrush x:Key="WidgetTintTealFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#382DD4BF" Offset="0" />
+        <GradientStop Color="#102DD4BF" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintTealStroke" Color="#4A2DD4BF" />
+    <LinearGradientBrush x:Key="WidgetTintSkyFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3838BDF8" Offset="0" />
+        <GradientStop Color="#1038BDF8" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintSkyStroke" Color="#4A38BDF8" />
+    <LinearGradientBrush x:Key="WidgetTintCoralFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#38F97316" Offset="0" />
+        <GradientStop Color="#10F97316" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintCoralStroke" Color="#4AF97316" />
+    <LinearGradientBrush x:Key="WidgetTintVioletFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#38A78BFA" Offset="0" />
+        <GradientStop Color="#10A78BFA" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintVioletStroke" Color="#4AA78BFA" />
+    <LinearGradientBrush x:Key="WidgetTintAmberFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#38F59E0B" Offset="0" />
+        <GradientStop Color="#10F59E0B" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintAmberStroke" Color="#4AF59E0B" />
+    <LinearGradientBrush x:Key="WidgetTintSlateFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#3894A3B8" Offset="0" />
+        <GradientStop Color="#1094A3B8" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintSlateStroke" Color="#4A94A3B8" />
+    <LinearGradientBrush x:Key="WidgetTintRedFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#38F87171" Offset="0" />
+        <GradientStop Color="#10F87171" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintRedStroke" Color="#4AF87171" />
+    <LinearGradientBrush x:Key="WidgetTintIndigoFill" StartPoint="0,0" EndPoint="1,1">
+        <GradientStop Color="#386366F1" Offset="0" />
+        <GradientStop Color="#106366F1" Offset="1" />
+    </LinearGradientBrush>
+    <SolidColorBrush x:Key="WidgetTintIndigoStroke" Color="#4A6366F1" />
+
+    <!-- Drawn only when focus arrives from the keyboard, never after a mouse click. -->
+    <Style x:Key="WidgetKeyboardFocusVisual">
+        <Setter Property="Control.Template">
+            <Setter.Value>
+                <ControlTemplate>
+                    <Border CornerRadius="{StaticResource WidgetRadius}" BorderThickness="1"
+                            BorderBrush="{DynamicResource StrokeFocus}" SnapsToDevicePixels="True" />
+                </ControlTemplate>
+            </Setter.Value>
+        </Setter>
+    </Style>
+
     <!-- Whole-card button (clock, battery, meters) with a subtle hover. -->
     <Style x:Key="WidgetCardButton" TargetType="Button">
         <Setter Property="Background" Value="{DynamicResource WidgetCard}" />
@@ -160,25 +214,26 @@
         <Setter Property="Margin" Value="{StaticResource WidgetSpacing}" />
         <Setter Property="VerticalAlignment" Value="Center" />
         <Setter Property="Cursor" Value="Hand" />
-        <Setter Property="FocusVisualStyle" Value="{x:Null}" />
+        <Setter Property="FocusVisualStyle" Value="{StaticResource WidgetKeyboardFocusVisual}" />
         <Setter Property="ToolTipService.InitialShowDelay" Value="650" />
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
-                    <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
-                            BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource WidgetRadius}"
-                            Padding="{TemplateBinding Padding}" SnapsToDevicePixels="True">
-                        <ContentPresenter HorizontalAlignment="Center" VerticalAlignment="Center" />
-                    </Border>
+                    <Grid SnapsToDevicePixels="True">
+                        <Border x:Name="Surface" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}"
+                                BorderThickness="{TemplateBinding BorderThickness}" CornerRadius="{StaticResource WidgetRadius}" />
+                        <!-- Hover and press light the card from above, so a tinted card keeps its own colour. -->
+                        <Border x:Name="StateLayer" CornerRadius="{StaticResource WidgetRadius}"
+                                Background="{DynamicResource WidgetCardHover}" Opacity="0" IsHitTestVisible="False" />
+                        <ContentPresenter Margin="{TemplateBinding Padding}" HorizontalAlignment="Center" VerticalAlignment="Center" />
+                    </Grid>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{DynamicResource WidgetCardHover}" />
+                            <Setter TargetName="StateLayer" Property="Opacity" Value="1" />
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
-                            <Setter TargetName="Surface" Property="Background" Value="{DynamicResource SurfacePressed}" />
-                        </Trigger>
-                        <Trigger Property="IsKeyboardFocused" Value="True">
-                            <Setter TargetName="Surface" Property="BorderBrush" Value="{DynamicResource StrokeFocus}" />
+                            <Setter TargetName="StateLayer" Property="Background" Value="{DynamicResource SurfacePressed}" />
+                            <Setter TargetName="StateLayer" Property="Opacity" Value="1" />
                         </Trigger>
                     </ControlTemplate.Triggers>
                 </ControlTemplate>

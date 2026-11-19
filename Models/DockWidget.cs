@@ -34,6 +34,34 @@ public class DockWidgetItem(string id, string label) : INotifyPropertyChanged
         }
     }
 
+    private bool _isCharging;
+
+    /// <summary>Battery widget: the device is charging, drawn as a bolt on the battery icon.</summary>
+    public bool IsCharging
+    {
+        get => _isCharging;
+        set
+        {
+            if (_isCharging == value) return;
+            _isCharging = value;
+            NotifyChanged(nameof(IsCharging));
+        }
+    }
+
+    private bool _isBatteryLow;
+
+    /// <summary>Battery widget: low and running on battery, drawn as a red card.</summary>
+    public bool IsBatteryLow
+    {
+        get => _isBatteryLow;
+        set
+        {
+            if (_isBatteryLow == value) return;
+            _isBatteryLow = value;
+            NotifyChanged(nameof(IsBatteryLow));
+        }
+    }
+
     public event PropertyChangedEventHandler? PropertyChanged;
     protected void NotifyChanged(string propertyName) => PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
 }

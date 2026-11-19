@@ -112,6 +112,7 @@ public sealed class WeatherWidget : DockWidget
         if (_report is not { } report)
         {
             _icon.Content = null;
+            WidgetTint.Apply(_card, null);
             _temperature.Text = UiText.Get("WeatherUnavailable");
             _card.ToolTip = _error;
             System.Windows.Automation.AutomationProperties.SetName(_card, $"{UiText.Get("Weather")}: {_error}");
@@ -119,6 +120,7 @@ public sealed class WeatherWidget : DockWidget
         }
         var (icon, text) = WeatherService.Describe(report.Code);
         _icon.Content = FindResource(icon);
+        WidgetTint.Apply(_card, WidgetTint.ForWeatherIcon(icon));
         _temperature.Text = FormatDegrees(report.Temperature);
         _card.ToolTip = string.IsNullOrEmpty(report.Place) ? UiText.Get(text) : $"{report.Place} · {UiText.Get(text)}";
         System.Windows.Automation.AutomationProperties.SetName(_card, $"{UiText.Get("Weather")}: {_temperature.Text}, {_card.ToolTip}");

@@ -37,6 +37,21 @@ internal static class DockLayoutChecks
                 .SequenceEqual(["app:A", "widget:Clock", "widget:Audio", "app:B"]),
             "Dropping at the far right must reach the last visible position.");
 
+        // Live drag: the gap that opens while dragging must match where MoveVisibleItem drops the item.
+        var slots = new[] { (0.0, 40.0), (40.0, 40.0), (80.0, 120.0), (200.0, 90.0) };
+        Check(DockItemOrdering.InsertionIndex(slots, 10) == 0 && DockItemOrdering.InsertionIndex(slots, 70) == 2
+                && DockItemOrdering.InsertionIndex(slots, 150) == 3 && DockItemOrdering.InsertionIndex(slots, 400) == 4,
+            "The live insertion index must count the item centers before the pointer.");
+        Check(DockItemOrdering.SlideFor(2, 1, 3, 40) == -40 && DockItemOrdering.SlideFor(3, 1, 3, 40) == 0
+                && DockItemOrdering.SlideFor(0, 1, 3, 40) == 0,
+            "Dragging right must slide only the passed items left by the dragged item's size.");
+        Check(DockItemOrdering.SlideFor(0, 2, 0, 120) == 120 && DockItemOrdering.SlideFor(1, 2, 0, 120) == 120
+                && DockItemOrdering.SlideFor(3, 2, 0, 120) == 0,
+            "Dragging left must slide the passed items right by the dragged item's size.");
+        Check(Enumerable.Range(0, 4).All(item => DockItemOrdering.SlideFor(item, 1, 1, 40) == 0
+                && DockItemOrdering.SlideFor(item, 1, 2, 40) == 0),
+            "Hovering the item's own slot must not move anything.");
+
         var stored = new[] { "app:A", "app:closed", "app:B", "widget:disabled", "widget:Clock" };
         var shown = new[] { "app:A", "app:B", "widget:Clock" };
         var reordered = DockItemOrdering.MoveVisibleItem(stored, shown, "widget:Clock", 1);

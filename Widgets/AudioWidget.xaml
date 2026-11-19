@@ -3,7 +3,8 @@
               xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
               xmlns:w="clr-namespace:OpenTaskbar.Widgets"
               xmlns:local="clr-namespace:OpenTaskbar.Services">
-    <Border x:Name="Card" Style="{StaticResource WidgetCardBorder}" Width="140" Padding="8,0,10,0" MouseWheel="Card_MouseWheel" MouseLeftButtonUp="Card_MouseLeftButtonUp" Cursor="Hand">
+    <Border x:Name="Card" Style="{StaticResource WidgetCardBorder}" Width="140"
+            Background="{DynamicResource WidgetTintVioletFill}" BorderBrush="{DynamicResource WidgetTintVioletStroke}" Padding="8,0,10,0" MouseWheel="Card_MouseWheel" MouseLeftButtonUp="Card_MouseLeftButtonUp" Cursor="Hand">
         <Grid VerticalAlignment="Center">
             <Grid.ColumnDefinitions>
                 <ColumnDefinition Width="Auto" />

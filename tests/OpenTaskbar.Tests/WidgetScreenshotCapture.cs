@@ -36,7 +36,7 @@ internal static class WidgetScreenshotCapture
                 StatsMeters: SystemMeters.Cpu | SystemMeters.Memory);
 
             // 1. Battery Card
-            var batteryItem = new DockWidgetItem(DockWidgetService.BatteryId, "Pil") { Value = "85% · Şarj oluyor" };
+            var batteryItem = new DockWidgetItem(DockWidgetService.BatteryId, "Pil") { Value = "85%", IsCharging = true };
             var batteryHost = new ContentControl { Content = batteryItem };
             SavePng(app, batteryHost, 200, 62, $"battery_{suffix}.png");
 

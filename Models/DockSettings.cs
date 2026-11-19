@@ -77,7 +77,7 @@ public sealed record DockSettings(
     IReadOnlyList<string>? Widgets = null,
     IReadOnlyList<string>? InstalledWidgets = null,
     DockLayout Layout = DockLayout.Floating,
-    DockSize Size = DockSize.Compact,
+    DockSize Size = DockSize.Medium,
     bool MagnificationEnabled = true,
     bool ShowClock = false,
     bool ShowMedia = false,
