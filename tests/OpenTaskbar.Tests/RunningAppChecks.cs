@@ -1,3 +1,4 @@
+using System.IO;
 using System.Windows.Media;
 using System.Windows.Media.Imaging;
 using OpenTaskbar.Models;
@@ -137,6 +138,28 @@ internal static class RunningAppChecks
         FinishLoads();
         Check(ReferenceEquals(background.Get(FrameHost, 8), generic) && background.HasPendingLookups,
             "A missing Start menu image must fall back to the file icon and keep its identity retries.");
+
+        // Pinned apps have no window: the shortcut's icon file comes first, then a Store app's identity.
+        Check(PinnedAppIcon.ParseIconLocation(@"C:\Web Apps\YouTube Music.ico,0") is (@"C:\Web Apps\YouTube Music.ico", 0)
+            && PinnedAppIcon.ParseIconLocation(",0") is null && PinnedAppIcon.ParseIconLocation(null) is null
+            && PinnedAppIcon.ParseIconLocation("\"C:\\a,b\\app.exe\",-101") is (@"C:\a,b\app.exe", -101),
+            "A shortcut's IconLocation must yield its file and index, and nothing when it names no file.");
+        var testRoot = Path.Combine(Path.GetTempPath(), "OpenTaskbarTests", Guid.NewGuid().ToString("N"));
+        var packageRoot = Path.Combine(testRoot, "WindowsApps", "5319275A.WhatsAppDesktop_2.2645.101.0_x64__cv1g1gvanyjgm");
+        Directory.CreateDirectory(packageRoot);
+        try
+        {
+            File.WriteAllText(Path.Combine(packageRoot, "AppxManifest.xml"),
+                """<Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10"><Applications><Application Id="Helper" Executable="Helper.exe" /><Application Id="App" Executable="WhatsApp.Root.exe" /></Applications></Package>""");
+            Check(PinnedAppIcon.PackagedAppId(Path.Combine(packageRoot, "WhatsApp.Root.exe")) == "5319275A.WhatsAppDesktop_cv1g1gvanyjgm!App"
+                && PinnedAppIcon.PackagedAppId(Path.Combine(packageRoot, "Other.exe")) is null
+                && PinnedAppIcon.PackagedAppId(Desktop) is null,
+                "A pinned Store app must find its AppUserModelID in its package manifest.");
+        }
+        finally
+        {
+            Directory.Delete(testRoot, recursive: true);
+        }
 
         return checks;
     }

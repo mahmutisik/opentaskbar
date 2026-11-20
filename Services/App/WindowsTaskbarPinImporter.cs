@@ -101,6 +101,7 @@ public static class WindowsTaskbarPinImporter
                         apps.Add(new DockApp(Path.GetFileNameWithoutExtension(shortcutPath), executablePath)
                         {
                             LaunchArguments = string.IsNullOrWhiteSpace(arguments) ? null : arguments,
+                            IconLocation = string.IsNullOrWhiteSpace(iconLocation) ? null : iconLocation,
                             ShortcutPath = Path.GetFullPath(shortcutPath)
                         });
                     }

@@ -660,7 +660,7 @@ public partial class MainWindow
 
             _pinnedApps.Add(new DockApp(pin.Name, pin.ExecutablePath)
             {
-                Icon = ApplicationIconProvider.GetForFile(pin.ExecutablePath),
+                Icon = PinnedAppIcon.Load(pin.ExecutablePath, iconLocation: null),
                 LaunchArguments = pin.Arguments,
                 ShortcutPath = shortcutPath
             });

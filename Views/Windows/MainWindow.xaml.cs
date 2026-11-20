@@ -466,7 +466,7 @@ public partial class MainWindow : Window
         var apps = result.Apps.ToList();
         foreach (var app in apps)
         {
-            app.Icon = ApplyApplicationIcon(app.ExecutablePath);
+            app.Icon = PinnedAppIcon.Load(app.ExecutablePath, app.IconLocation);
         }
 
         if (preferredOrder is { Count: > 0 })
@@ -1767,9 +1767,6 @@ public partial class MainWindow : Window
         if (_settingsWindow.WindowState == WindowState.Minimized) _settingsWindow.WindowState = WindowState.Normal;
         _settingsWindow.Activate();
     }
-
-    private System.Windows.Media.Imaging.BitmapSource? ApplyApplicationIcon(string executablePath) =>
-        ApplicationIconProvider.GetForFile(executablePath);
 
     private void ThemePacks_Changed(object? sender, EventArgs e)
     {
