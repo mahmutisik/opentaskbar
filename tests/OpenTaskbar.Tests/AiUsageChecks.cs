@@ -1,3 +1,4 @@
+using System.Diagnostics;
 using System.IO;
 using System.Net;
 using System.Net.Http.Headers;
@@ -16,6 +17,17 @@ internal static class AiUsageChecks
         {
             if (!condition) throw new InvalidOperationException(message);
             checks++;
+        }
+
+        foreach (var command in new[] { "opencode", "agy" })
+        {
+            var startInfo = AiUsageService.HiddenCliStartInfo(command, "--test");
+            Check(startInfo.FileName == command && startInfo.ArgumentList.SequenceEqual(["--test"])
+                && !startInfo.UseShellExecute && startInfo.CreateNoWindow
+                && startInfo.WindowStyle == ProcessWindowStyle.Hidden
+                && startInfo.RedirectStandardInput && startInfo.RedirectStandardOutput
+                && startInfo.RedirectStandardError,
+                "Quota CLI processes must not create visible or interactive console windows.");
         }
 
         var claude = AiUsageService.ParseClaude("""

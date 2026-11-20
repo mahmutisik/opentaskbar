@@ -39,6 +39,26 @@ public static class AiUsageService
     internal sealed record LoadResult(AiUsageReport? Report, string? Error, TimeSpan? RetryAfter = null);
     private sealed record Credential(string Token, string? Account = null, string? Plan = null, string? RefreshToken = null, string? FilePath = null);
 
+    // Keep background quota queries non-interactive and out of the foreground.
+    // CreateNoWindow applies to a console executable; Hidden also requests that
+    // Windows not show its initial window if the target has a window subsystem.
+    internal static ProcessStartInfo HiddenCliStartInfo(string executable, params string[] arguments)
+    {
+        var startInfo = new ProcessStartInfo(executable)
+        {
+            UseShellExecute = false,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
+            RedirectStandardInput = true,
+            RedirectStandardOutput = true,
+            RedirectStandardError = true,
+            StandardOutputEncoding = Encoding.UTF8
+        };
+        foreach (var argument in arguments) startInfo.ArgumentList.Add(argument);
+        return startInfo;
+    }
+
+
     public static async Task<(AiUsageReport? Report, string? Error)> LoadAsync(AiProviders provider, CancellationToken cancellation)
     {
         var result = await LoadWithPolicyAsync(provider, cancellation);
@@ -468,17 +488,11 @@ public static class AiUsageService
             if (!File.Exists(dbPath)) return null;
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo("opencode")
-                {
-                    ArgumentList = { "auth", "export" },
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8
-                }
+                StartInfo = HiddenCliStartInfo("opencode", "auth", "export")
             };
             if (!process.Start()) return null;
+            process.StandardInput.Close();
+            AppLog.Info($"AI usage CLI started: OpenCode pid={process.Id}");
             var stdout = process.StandardOutput.ReadToEnd();
             if (!process.WaitForExit(5000) || process.ExitCode != 0 || string.IsNullOrWhiteSpace(stdout)) return null;
             using var document = JsonDocument.Parse(stdout);
@@ -914,17 +928,11 @@ public static class AiUsageService
         {
             using var process = new Process
             {
-                StartInfo = new ProcessStartInfo("agy")
-                {
-                    ArgumentList = { "-p", "/usage", "--output-format", "json" },
-                    UseShellExecute = false,
-                    CreateNoWindow = true,
-                    RedirectStandardOutput = true,
-                    RedirectStandardError = true,
-                    StandardOutputEncoding = Encoding.UTF8
-                }
+                StartInfo = HiddenCliStartInfo("agy", "-p", "/usage", "--output-format", "json")
             };
             if (!process.Start()) return null;
+            process.StandardInput.Close();
+            AppLog.Info($"AI usage CLI started: Antigravity pid={process.Id}");
             var stdoutTask = process.StandardOutput.ReadToEndAsync(cancellation);
             var stderrTask = process.StandardError.ReadToEndAsync(cancellation);
             try

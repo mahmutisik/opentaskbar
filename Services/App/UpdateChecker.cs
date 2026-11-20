@@ -255,8 +255,8 @@ public static class UpdateChecker
         {
             FileName = "cmd.exe",
             UseShellExecute = requiresElevation,
-            CreateNoWindow = !requiresElevation,
-            WindowStyle = requiresElevation ? ProcessWindowStyle.Normal : ProcessWindowStyle.Hidden,
+            CreateNoWindow = true,
+            WindowStyle = ProcessWindowStyle.Hidden,
             WorkingDirectory = targetDir
         };
 
@@ -271,7 +271,8 @@ public static class UpdateChecker
             startInfo.ArgumentList.Add(scriptPath);
         }
 
-        Process.Start(startInfo);
+        using var updater = Process.Start(startInfo);
+        AppLog.Info($"Updater started: pid={updater?.Id}, elevation={requiresElevation}");
 
         if (Application.Current is { } app)
         {
