@@ -15,6 +15,12 @@ namespace OpenTaskbar.Services;
 public sealed class WindowThumbnailPreview : IDisposable
 {
     private const uint DwmThumbnailRectDestination = 0x00000001;
+    private const int DwmwaWindowCornerPreference = 33;
+    private const int DwmwaBorderColor = 34;
+    private const int DwmwcpRound = 2;
+    private const int DwmwaColorNone = unchecked((int)0xFFFFFFFE);
+    /// <summary>Windows 11's radius for rounded windows, which the preview surface matches.</summary>
+    private const double SurfaceCornerRadius = 8;
     private const uint DwmThumbnailOpacity = 0x00000004;
     private const uint DwmThumbnailVisible = 0x00000008;
     private const uint MonitorDefaultToNearest = 2;
@@ -81,7 +87,7 @@ public sealed class WindowThumbnailPreview : IDisposable
             Background = popupBrush,
             BorderThickness = new Thickness(1),
             BorderBrush = strokeBrush,
-            CornerRadius = new CornerRadius(10),
+            CornerRadius = new CornerRadius(SurfaceCornerRadius),
             Child = surfaceGrid
         };
         surface.SetResourceReference(Border.BackgroundProperty, "SurfacePopup");
@@ -105,6 +111,7 @@ public sealed class WindowThumbnailPreview : IDisposable
         _window.Closed += Window_Closed;
         _window.SetResourceReference(Window.BackgroundProperty, "SurfacePopup");
         _window.SourceInitialized += PreviewWindow_SourceInitialized;
+        _window.SourceInitialized += SurfaceWindow_SourceInitialized;
         _window.MouseEnter += Window_MouseEnter;
         _window.MouseLeave += Window_MouseLeave;
 
@@ -350,6 +357,15 @@ public sealed class WindowThumbnailPreview : IDisposable
                     _sourceHandle = handle;
                     PreviewClicked?.Invoke(this, EventArgs.Empty);
                 }
+            };
+
+            overlayCard.MouseUp += (_, e) =>
+            {
+                // Middle-click closes that window, as on the Windows taskbar.
+                if (e.ChangedButton != System.Windows.Input.MouseButton.Middle) return;
+                e.Handled = true;
+                _sourceHandle = handle;
+                CloseRequested?.Invoke(this, EventArgs.Empty);
             };
 
             overlayContainer.Children.Add(overlayCard);
@@ -644,6 +660,19 @@ public sealed class WindowThumbnailPreview : IDisposable
         }
     }
 
+    /// <summary>
+    /// The surface window cannot be transparent (DWM thumbnails need an opaque destination), so its square corners
+    /// would show around the rounded card. Windows 11 rounds the window itself; the card draws its own border.
+    /// </summary>
+    private static void SurfaceWindow_SourceInitialized(object? sender, EventArgs e)
+    {
+        if (sender is not Window window || PresentationSource.FromVisual(window) is not HwndSource source) return;
+        var corners = DwmwcpRound;
+        _ = DwmSetWindowAttribute(source.Handle, DwmwaWindowCornerPreference, ref corners, sizeof(int));
+        var border = DwmwaColorNone;
+        _ = DwmSetWindowAttribute(source.Handle, DwmwaBorderColor, ref border, sizeof(int));
+    }
+
     private static nint PreviewWindowProc(nint hwnd, int message, nint wParam, nint lParam, ref bool handled)
     {
         const int wmMouseActivate = 0x0021;
@@ -697,6 +726,9 @@ public sealed class WindowThumbnailPreview : IDisposable
         public NativeRect Work;
         public uint Flags;
     }
+
+    [DllImport("dwmapi.dll")]
+    private static extern int DwmSetWindowAttribute(nint windowHandle, int attribute, ref int value, int size);
 
     [DllImport("dwmapi.dll")]
     private static extern int DwmRegisterThumbnail(nint destination, nint source, out nint thumbnail);
