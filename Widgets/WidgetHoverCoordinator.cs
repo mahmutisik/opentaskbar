@@ -1,5 +1,6 @@
 using System.Runtime.InteropServices;
 using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
 using System.Windows.Media;
 using System.Windows.Threading;
@@ -7,12 +8,16 @@ using System.Windows.Threading;
 namespace OpenTaskbar.Widgets;
 
 /// <summary>
-/// Shared hover-expansion coordinator for compact dock widgets. Uses a 350 ms hover intent delay before
-/// opening, never steals window focus, and verifies physical cursor position at 200 ms intervals while open
-/// (zero CPU when closed) so moving the pointer back to another window/video always closes the card cleanly.
+/// Shared hover cards for dock widgets, like the window previews over app icons. A compact widget expands in place
+/// or shows its hover card; a full-size widget shows its click flyout. Uses a 350 ms hover intent delay before
+/// opening (shorter while a card is already up, to move between widgets), never steals window focus, and verifies
+/// physical cursor position at 200 ms intervals while open (zero CPU when closed) so moving the pointer back to
+/// another window/video always closes the card cleanly.
 /// </summary>
 public sealed class WidgetHoverCoordinator : IDisposable
 {
+    private static readonly TimeSpan EnterDelay = TimeSpan.FromMilliseconds(350);
+    private static readonly TimeSpan SwitchDelay = TimeSpan.FromMilliseconds(140);
     private readonly DispatcherTimer _enterTimer;
     private readonly DispatcherTimer _leaveTimer;
     private readonly DockFlyout _flyout = new();
@@ -25,6 +30,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
     private long _suppressedUntilMs;
     private bool _disposed;
     private readonly HashSet<DockWidget> _attached = [];
+    private readonly List<FrameworkElement> _mutedToolTips = [];
 
     public bool IsHoverActive => _activeWidget is not null || _flyout.IsOpen;
     public event Action<bool>? HoverActiveChanged;
@@ -38,7 +44,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
         _onLayoutChanged = onLayoutChanged;
         _enterTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
         {
-            Interval = TimeSpan.FromMilliseconds(350)
+            Interval = EnterDelay
         };
         _enterTimer.Tick += EnterTimer_Tick;
         _leaveTimer = new DispatcherTimer(DispatcherPriority.Background, dispatcher)
@@ -51,9 +57,10 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
     public void Attach(DockWidget widget)
     {
-        if (_disposed || !widget.SupportsCompactMode || !_attached.Add(widget)) return;
+        if (_disposed || !_attached.Add(widget)) return;
         widget.MouseEnter += Widget_MouseEnter;
         widget.MouseLeave += Widget_MouseLeave;
+        widget.PreviewMouseDown += Widget_PreviewMouseDown;
     }
 
     public void Detach(DockWidget widget)
@@ -61,6 +68,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
         if (!_attached.Remove(widget)) return;
         widget.MouseEnter -= Widget_MouseEnter;
         widget.MouseLeave -= Widget_MouseLeave;
+        widget.PreviewMouseDown -= Widget_PreviewMouseDown;
         if (_pendingWidget == widget)
         {
             _enterTimer.Stop();
@@ -88,6 +96,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
         _leaveTimer.Stop();
         _pendingWidget = null;
         _outsideSinceMs = 0;
+        RestoreToolTips();
         if (_activeWidget is null && !_flyout.IsOpen) return;
 
         var previous = _activeWidget;
@@ -106,6 +115,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
     private void Flyout_Closed(object? sender, EventArgs e)
     {
+        RestoreToolTips();
         if (_activeWidget is null && _activeFlyoutContent is null) return;
         _leaveTimer.Stop();
         _outsideSinceMs = 0;
@@ -122,7 +132,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
     private void Widget_MouseEnter(object sender, MouseEventArgs e)
     {
-        if (_disposed || sender is not DockWidget widget || !widget.IsCompact) return;
+        if (_disposed || sender is not DockWidget widget) return;
         if (Environment.TickCount64 < _suppressedUntilMs) return;
         if (widget == _activeWidget)
         {
@@ -132,7 +142,22 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
         _enterTimer.Stop();
         _pendingWidget = widget;
+        // Like the window previews: once a card is up, moving to the next widget swaps cards quickly.
+        _enterTimer.Interval = IsHoverActive ? SwitchDelay : EnterDelay;
         _enterTimer.Start();
+    }
+
+    private void Widget_PreviewMouseDown(object sender, MouseButtonEventArgs e)
+    {
+        if (sender is not DockWidget widget) return;
+        if (_pendingWidget == widget)
+        {
+            _enterTimer.Stop();
+            _pendingWidget = null;
+        }
+
+        // A click on the widget hands over to what the click does (its own flyout, a settings page, a drag).
+        if (_activeWidget == widget && !widget.IsHoverExpanded) CollapseActive();
     }
 
     private void Widget_MouseLeave(object sender, MouseEventArgs e)
@@ -161,7 +186,9 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
         var widget = _pendingWidget;
         _pendingWidget = null;
-        if (_disposed || widget is null || !widget.IsCompact || !IsWidgetCurrentlyHovered(widget)) return;
+        if (_disposed || widget is null || !IsWidgetCurrentlyHovered(widget)) return;
+        // Not while a button is held (a drag about to start) or while a flyout opened by a click is up.
+        if (Mouse.LeftButton == MouseButtonState.Pressed || (DockFlyout.IsAnyOpen && !_flyout.IsOpen)) return;
 
         if (_activeWidget is not null && _activeWidget != widget)
         {
@@ -170,7 +197,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
         _activeWidget = widget;
         _outsideSinceMs = 0;
-        if (_canExpandInline(widget))
+        if (widget.IsCompact && _canExpandInline(widget))
         {
             widget.SetHoverExpanded(true);
             _onLayoutChanged(true);
@@ -179,7 +206,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
             return;
         }
 
-        var content = widget.BuildHoverFlyoutContent();
+        var content = widget.IsCompact ? widget.BuildHoverFlyoutContent() : widget.BuildFullHoverFlyoutContent();
         if (content is null)
         {
             _activeWidget = null;
@@ -188,7 +215,8 @@ public sealed class WidgetHoverCoordinator : IDisposable
 
         _activeFlyoutContent = content;
         widget.IsHoverFlyoutOpen = true;
-        _flyout.Show(widget, content, animate: true, focusable: false);
+        MuteToolTips(widget);
+        _flyout.Show(widget, content, animate: true, focusable: false, lightDismiss: false);
         if (!_leaveTimer.IsEnabled) _leaveTimer.Start();
         HoverActiveChanged?.Invoke(true);
     }
@@ -228,6 +256,25 @@ public sealed class WidgetHoverCoordinator : IDisposable
         {
             CollapseActive();
         }
+    }
+
+    /// <summary>The card covers what the widget's tooltips say; keep them from popping up over it.</summary>
+    private void MuteToolTips(DependencyObject root)
+    {
+        if (root is FrameworkElement { ToolTip: not null } element && ToolTipService.GetIsEnabled(element))
+        {
+            ToolTipService.SetIsEnabled(element, false);
+            _mutedToolTips.Add(element);
+        }
+
+        for (var i = 0; i < VisualTreeHelper.GetChildrenCount(root); i++)
+            MuteToolTips(VisualTreeHelper.GetChild(root, i));
+    }
+
+    private void RestoreToolTips()
+    {
+        foreach (var element in _mutedToolTips) element.ClearValue(ToolTipService.IsEnabledProperty);
+        _mutedToolTips.Clear();
     }
 
     private static bool IsSliderDragCaptured(DockWidget widget, UIElement? flyoutContent)
@@ -317,6 +364,7 @@ public sealed class WidgetHoverCoordinator : IDisposable
         {
             widget.MouseEnter -= Widget_MouseEnter;
             widget.MouseLeave -= Widget_MouseLeave;
+            widget.PreviewMouseDown -= Widget_PreviewMouseDown;
         }
         _attached.Clear();
         _enterTimer.Tick -= EnterTimer_Tick;

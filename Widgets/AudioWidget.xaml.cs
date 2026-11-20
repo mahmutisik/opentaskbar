@@ -81,6 +81,7 @@ public partial class AudioWidget : DockWidget
     }
 
     public override UIElement? BuildHoverFlyoutContent() => BuildFlyoutContent();
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildFlyoutContent();
 
     public UIElement BuildFlyoutContent()
     {

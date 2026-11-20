@@ -212,6 +212,18 @@ internal static class AdaptiveWidgetAndConfirmChecks
             "Compact-capable widgets must produce hover flyout content cleanly.");
         hover.CollapseActive();
         check(!hover.IsHoverActive, "CollapseActive must reset hover active state.");
+
+        // Full-size widgets show their click flyout on hover; the ones that already show everything inline show nothing.
+        using var clock = new ClockWidget();
+        using var weather = new WeatherWidget();
+        using var netSpeed = new NetSpeedWidget();
+        using var bluetooth = new BluetoothBatteryWidget();
+        using var aiUsage = new AiUsageWidget();
+        foreach (var widget in new OpenTaskbar.Widgets.DockWidget[] { clock, weather, netSpeed, bluetooth, aiUsage, audioWidget })
+            check(widget.BuildFullHoverFlyoutContent() is not null,
+                $"{widget.GetType().Name} must show its flyout when the pointer rests on the full-size widget.");
+        check(qsWidget.BuildFullHoverFlyoutContent() is null,
+            "A full-size widget that already shows its controls inline must not open a hover card.");
     }
 
     private static void CheckEnhancedAudioCenter(Application application, Action<bool, string> check)

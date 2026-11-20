@@ -263,7 +263,11 @@ public sealed class DockFlyout
         }
     }
 
-    public void Show(UIElement target, UIElement content, bool animate = true, bool focusable = false)
+    /// <param name="lightDismiss">
+    /// False for hover cards: the popup then takes no mouse capture, so a click on the widget under it reaches the
+    /// widget instead of only closing the card. The caller closes it when the pointer leaves.
+    /// </param>
+    public void Show(UIElement target, UIElement content, bool animate = true, bool focusable = false, bool lightDismiss = true)
     {
         _isOpenState = true;
         _explicitClose = false;
@@ -276,7 +280,7 @@ public sealed class DockFlyout
             _ => new Thickness(12, 10, 12, 14)
         };
         _innerBevel.Child = content;
-        _popup.StaysOpen = false;
+        _popup.StaysOpen = !lightDismiss;
         _popup.PopupAnimation = animate && SystemParameters.ClientAreaAnimation ? PopupAnimation.Fade : PopupAnimation.None;
         CleanRegistry();
         for (var i = 0; i < FlyoutRegistry.Count; i++)

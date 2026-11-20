@@ -65,6 +65,12 @@ public class DockWidget : UserControl, IDisposable
 
     public virtual UIElement? BuildHoverFlyoutContent() => null;
 
+    /// <summary>
+    /// The card shown when the pointer rests on the full-size widget. Null by default: the full widget already shows
+    /// what the compact hover card adds. Widgets whose click opens a flyout return that flyout's content.
+    /// </summary>
+    public virtual UIElement? BuildFullHoverFlyoutContent() => null;
+
     protected virtual void OnCompactChanged(bool compact) { }
     protected virtual void OnHoverExpandedChanged(bool expanded) { }
 

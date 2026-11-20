@@ -136,13 +136,18 @@ public partial class ClockWidget : DockWidget
         }
     }
 
-    private void ClockButton_Click(object sender, RoutedEventArgs e)
+    private void ClockButton_Click(object sender, RoutedEventArgs e) => _calendar.Toggle(ClockButton, BuildCalendarFlyout);
+
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildCalendarFlyout();
+
+    /// <summary>The calendar flyout, opened on this month.</summary>
+    private UIElement BuildCalendarFlyout()
     {
         _shownMonth = DateOnly.FromDateTime(DateTime.Today);
         _shownMonth = new DateOnly(_shownMonth.Year, _shownMonth.Month, 1);
         var root = new ContentControl();
         root.Content = BuildCalendar(root);
-        _calendar.Toggle(ClockButton, () => root);
+        return root;
     }
 
     /// <summary>Month view with the user's first day of week; arrows rebuild it in place.</summary>

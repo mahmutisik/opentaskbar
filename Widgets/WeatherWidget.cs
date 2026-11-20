@@ -128,6 +128,8 @@ public sealed class WeatherWidget : DockWidget
 
     private string FormatDegrees(double value) => $"{Math.Round(value).ToString(Settings.Language.Culture)}°";
 
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildFlyout();
+
     private UIElement BuildFlyout()
     {
         if (_report is not { } report)

@@ -286,6 +286,8 @@ public sealed class NetSpeedWidget : DockWidget
         _flyout.Toggle(_cardButton, BuildClickFlyoutContent, focusable: true);
     }
 
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildClickFlyoutContent();
+
     public override UIElement? BuildHoverFlyoutContent()
     {
         var panel = new StackPanel { Width = 240 };

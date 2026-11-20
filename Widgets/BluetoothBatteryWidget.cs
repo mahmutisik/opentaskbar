@@ -208,6 +208,8 @@ public sealed class BluetoothBatteryWidget : DockWidget
         }
     }
 
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildHoverFlyoutContent();
+
     public override UIElement? BuildHoverFlyoutContent()
     {
         var panel = new StackPanel { Width = 240 };

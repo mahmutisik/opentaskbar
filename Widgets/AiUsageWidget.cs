@@ -123,6 +123,7 @@ public sealed class AiUsageWidget : DockWidget
     protected override void OnLanguageChanged() => Refresh();
     protected override void OnCompactChanged(bool compact) => Render();
     public override UIElement? BuildHoverFlyoutContent() => BuildFlyout(_hoverCountdowns);
+    public override UIElement? BuildFullHoverFlyoutContent() => BuildHoverFlyoutContent();
 
     protected override void OnTick(DateTime now)
     {
