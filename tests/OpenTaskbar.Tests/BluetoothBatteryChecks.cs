@@ -54,8 +54,9 @@ internal static class BluetoothBatteryChecks
 
         check(widget.Content is Button, "Widget content must be a Button.");
         var button = (Button)widget.Content;
-        check(button.ToolTip?.ToString()?.Contains("ROG HARPE ACE AIM LAB: 53%") == true,
-            "Tooltip must contain device name and battery percentage.");
+        check(System.Windows.Automation.AutomationProperties.GetHelpText(button).Contains("ROG HARPE ACE AIM LAB: 53%"),
+            "The card's summary must contain device name and battery percentage.");
+        check(button.ToolTip is null, "The hover card replaces the card's tooltip.");
 
         // Test low battery state
         widget.BatteryReader = () => Task.FromResult<IReadOnlyList<BluetoothDeviceBatteryInfo>>(
@@ -64,7 +65,7 @@ internal static class BluetoothBatteryChecks
         ]);
         widget.RefreshBatteriesAsync().GetAwaiter().GetResult();
 
-        check(button.ToolTip?.ToString()?.Contains("12%") == true,
+        check(System.Windows.Automation.AutomationProperties.GetHelpText(button).Contains("12%"),
             "Low battery device must be reflected in display.");
     }
 

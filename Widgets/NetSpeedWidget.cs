@@ -197,7 +197,7 @@ public sealed class NetSpeedWidget : DockWidget
     {
         var description = UiText.Get("WidgetNetSpeedDescription");
         var heading = UiText.Get("WidgetNetSpeed");
-        _cardButton.ToolTip = description;
+        System.Windows.Automation.AutomationProperties.SetHelpText(_cardButton, description);
         AutomationProperties.SetName(_cardButton, heading);
         AutomationProperties.SetName(this, heading);
     }
@@ -283,6 +283,8 @@ public sealed class NetSpeedWidget : DockWidget
 
     private void CardButton_Click(object sender, RoutedEventArgs e)
     {
+        // The full-size hover card is this flyout; the compact one is a summary, so a click still opens the full flyout.
+        if (IsHoverFlyoutOpen && !IsCompact) return;
         _flyout.Toggle(_cardButton, BuildClickFlyoutContent, focusable: true);
     }
 

@@ -40,6 +40,7 @@ public class DockWidget : UserControl, IDisposable
     public virtual double CompactWidthEstimate => FullWidthEstimate;
     public bool IsCompact { get; private set; }
     public bool IsHoverExpanded { get; private set; }
+    /// <summary>True while the hover card is up. A click then changes nothing: the card already shows the flyout.</summary>
     public bool IsHoverFlyoutOpen { get; internal set; }
 
     internal void SetCompactState(bool compact)

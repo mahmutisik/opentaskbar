@@ -46,7 +46,8 @@ public partial class AudioWidget : DockWidget
 
     public override bool SupportsCompactMode => true;
     public override int ShrinkPriority => 40;
-    public override double FullWidthEstimate => 140;
+    private const double FullWidth = 84;
+    public override double FullWidthEstimate => FullWidth;
     public override double CompactWidthEstimate => 48;
 
     public AudioWidget()
@@ -60,9 +61,8 @@ public partial class AudioWidget : DockWidget
     private void ApplyDensityLayout()
     {
         var compact = IsCompact && !IsHoverExpanded;
-        Card.Width = compact ? 48 : 140;
+        Card.Width = compact ? 48 : FullWidth;
         Card.Padding = compact ? new Thickness(4, 2, 4, 2) : new Thickness(8, 0, 10, 0);
-        DeviceText.Visibility = compact ? Visibility.Collapsed : Visibility.Visible;
 
         if (compact)
         {
@@ -854,8 +854,7 @@ public partial class AudioWidget : DockWidget
             if (_flyoutSlider is not null) _flyoutSlider.IsEnabled = false;
             if (_flyoutLevelText is not null) _flyoutLevelText.Text = string.Empty;
             if (_flyoutIcon is not null) _flyoutIcon.Content = FindResource("IconVolumeMute");
-            DeviceText.Text = UiText.Get("NoAudioDevice");
-            Card.ToolTip = DeviceText.Text;
+            System.Windows.Automation.AutomationProperties.SetHelpText(Card, UiText.Get("NoAudioDevice"));
             LevelText.Text = string.Empty;
             SetVolumeIcon("IconVolumeMute");
             return;
@@ -878,8 +877,7 @@ public partial class AudioWidget : DockWidget
 
         MuteButton.IsEnabled = true;
         if (_flyoutSlider is not null) _flyoutSlider.IsEnabled = true;
-        DeviceText.Text = deviceName;
-        Card.ToolTip = $"{deviceName} ({level}%)";
+        System.Windows.Automation.AutomationProperties.SetHelpText(Card, $"{deviceName} ({level}%)");
         LevelText.Text = muted ? "—" : UiText.Format("Percent", level);
 
         var isHeadphone = deviceName.Contains("headphone", StringComparison.OrdinalIgnoreCase)

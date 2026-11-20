@@ -373,11 +373,15 @@ public sealed class AiUsageWidget : DockWidget
         var button = new Button { Content = row };
         button.SetResourceReference(StyleProperty, "WidgetCardButton");
         WidgetTint.Apply(button, WidgetTint.ForAiProvider(provider));
-        button.Click += (_, _) => _flyout.Toggle(button, () =>
+        button.Click += (_, _) =>
         {
-            _flyoutHost.Content = BuildFlyout(_countdowns);
-            return _flyoutHost;
-        });
+            if (IsHoverFlyoutOpen) return;
+            _flyout.Toggle(button, () =>
+            {
+                _flyoutHost.Content = BuildFlyout(_countdowns);
+                return _flyoutHost;
+            });
+        };
         _cards.Children.Add(button);
         return new(button, logo, label, ring);
     }
@@ -421,7 +425,8 @@ public sealed class AiUsageWidget : DockWidget
         card.Ring.SetResourceReference(RingMeter.ForegroundProperty, foreground);
         card.Name.SetResourceReference(TextBlock.ForegroundProperty, foreground);
         card.Logo.SetResourceReference(System.Windows.Shapes.Shape.FillProperty, foreground);
-        card.Button.ToolTip = toolTip;
+        // The hover card shows the details; the one-line summary stays for screen readers.
+        System.Windows.Automation.AutomationProperties.SetHelpText(card.Button, toolTip);
         AutomationProperties.SetName(card.Button, $"{UiText.Get("WidgetAiUsage")}: {toolTip}");
     }
     private UIElement BuildFlyout(List<(TextBlock Block, DateTimeOffset Reset)> countdowns)

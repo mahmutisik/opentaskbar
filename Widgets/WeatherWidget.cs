@@ -35,7 +35,10 @@ public sealed class WeatherWidget : DockWidget
         content.Children.Add(_temperature);
         _card = new Button { Content = content, Padding = new Thickness(10, 0, 12, 0) };
         _card.SetResourceReference(StyleProperty, "WidgetCardButton");
-        _card.Click += (_, _) => _flyout.Toggle(_card, BuildFlyout);
+        _card.Click += (_, _) =>
+        {
+            if (!IsHoverFlyoutOpen) _flyout.Toggle(_card, BuildFlyout);
+        };
         Content = _card;
         HasData = false;
     }
@@ -114,7 +117,6 @@ public sealed class WeatherWidget : DockWidget
             _icon.Content = null;
             WidgetTint.Apply(_card, null);
             _temperature.Text = UiText.Get("WeatherUnavailable");
-            _card.ToolTip = _error;
             System.Windows.Automation.AutomationProperties.SetName(_card, $"{UiText.Get("Weather")}: {_error}");
             return;
         }
@@ -122,8 +124,8 @@ public sealed class WeatherWidget : DockWidget
         _icon.Content = FindResource(icon);
         WidgetTint.Apply(_card, WidgetTint.ForWeatherIcon(icon));
         _temperature.Text = FormatDegrees(report.Temperature);
-        _card.ToolTip = string.IsNullOrEmpty(report.Place) ? UiText.Get(text) : $"{report.Place} · {UiText.Get(text)}";
-        System.Windows.Automation.AutomationProperties.SetName(_card, $"{UiText.Get("Weather")}: {_temperature.Text}, {_card.ToolTip}");
+        var condition = string.IsNullOrEmpty(report.Place) ? UiText.Get(text) : $"{report.Place} · {UiText.Get(text)}";
+        System.Windows.Automation.AutomationProperties.SetName(_card, $"{UiText.Get("Weather")}: {_temperature.Text}, {condition}");
     }
 
     private string FormatDegrees(double value) => $"{Math.Round(value).ToString(Settings.Language.Culture)}°";

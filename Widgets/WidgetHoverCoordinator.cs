@@ -156,8 +156,8 @@ public sealed class WidgetHoverCoordinator : IDisposable
             _pendingWidget = null;
         }
 
-        // A click on the widget hands over to what the click does (its own flyout, a settings page, a drag).
-        if (_activeWidget == widget && !widget.IsHoverExpanded) CollapseActive();
+        // The card stays up through a click: widgets skip the flyout their click would open while it shows.
+        // A drag closes it (WidgetCoordinator).
     }
 
     private void Widget_MouseLeave(object sender, MouseEventArgs e)

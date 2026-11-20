@@ -458,6 +458,7 @@ public sealed class WidgetCoordinator : IDisposable
                 captured.ReleaseMouseCapture();
             }
             e.Handled = true;
+            _hoverCoordinator.CollapseActive();
             AnimateWidgetDrag(targetWidget, widgetId);
         }
     }

@@ -66,7 +66,7 @@ internal static class FeatureAndMemoryChecks
                 Check(aiLoads == 0, "AI Usage must not load while all providers are disabled.");
                 ai.ApplySettings(new DockSettings(AiUsageProviders: AiProviders.Claude));
                 Check(aiLoads == 1 && ai.Visibility == Visibility.Visible
-                    && AiCards(ai) is [{ ToolTip: string hint }] && hint.Contains("claude", StringComparison.Ordinal),
+                    && AiCards(ai) is [var signInCard] && Summary(signInCard).Contains("claude", StringComparison.Ordinal),
                     "AI Usage must keep sign-in failures visible with a localized CLI hint.");
                 ai.Tick(DateTime.Now);
                 Check(aiLoads == 1, "A sign-in failure must not poll again without changed credentials.");
@@ -91,7 +91,7 @@ internal static class FeatureAndMemoryChecks
                 Check(aiCancellation.IsCancellationRequested, "Disabling AI providers must cancel their pending request.");
                 pending.SetResult((new(AiProviders.Codex, "fixture", [new("AiUsageSession", 0.5, null, 18000)], DateTimeOffset.UtcNow), null));
                 Dispatcher.CurrentDispatcher.Invoke(() => { }, DispatcherPriority.Background);
-                Check(AiCards(ai) is [{ ToolTip: string hint }] && hint == UiText.Get("AiUsageNoProviders"),
+                Check(AiCards(ai) is [var emptyCard] && Summary(emptyCard) == UiText.Get("AiUsageNoProviders"),
                     "A late AI response must not restore a disabled provider.");
             }
 
@@ -112,15 +112,15 @@ internal static class FeatureAndMemoryChecks
                     && cards[4].Content is StackPanel { Children: [_, TextBlock { Text: "Copilot" }, RingMeter { Value: 0.42, Text: "42" }] }
                     && cards[5].Content is StackPanel { Children: [_, TextBlock { Text: "DeepSeek" }, RingMeter { Value: 0.42, Text: "42" }] }
                     && cards[6].Content is StackPanel { Children: [_, TextBlock { Text: "OpenRouter" }, RingMeter { Value: 0.42, Text: "42" }] }
-                    && cards[0].ToolTip is string claudeTip && claudeTip.StartsWith("Claude Code 42%", StringComparison.Ordinal)
+                    && Summary(cards[0]) is var claudeTip && claudeTip.StartsWith("Claude Code 42%", StringComparison.Ordinal)
                     && claudeTip.Contains("Weekly 29%", StringComparison.Ordinal) && claudeTip.Contains("Resets in", StringComparison.Ordinal)
-                    && cards[1].ToolTip is string codexTip && codexTip.Contains(UiText.Get("AiUsageLimitReached"), StringComparison.Ordinal),
+                    && Summary(cards[1]) is var codexTip && codexTip.Contains(UiText.Get("AiUsageLimitReached"), StringComparison.Ordinal),
                     "AI Usage must show one card per provider with logo, name, usage ring and a one-line summary.");
                 ai.ApplySettings(new DockSettings(AiUsageProviders: AiProviders.All, AiUsageRing: AiUsageRing.Weekly));
-                Check(AiCards(ai)[0].ToolTip is string weeklyTip && weeklyTip.StartsWith("Claude Code 29%", StringComparison.Ordinal),
+                Check(Summary(AiCards(ai)[0]) is var weeklyTip && weeklyTip.StartsWith("Claude Code 29%", StringComparison.Ordinal),
                     "The ring setting must choose the window the dock shows.");
                 ai.SetCompactState(true);
-                Check(AiCards(ai) is [{ ToolTip: string compactTip }] && compactTip.Contains('\n'),
+                Check(AiCards(ai) is [var compactCard] && Summary(compactCard).Contains('\n'),
                     "Compact AI Usage must collapse to one card that summarizes every provider.");
                 Check(ai.BuildHoverFlyoutContent() is StackPanel aiFlyout && aiFlyout.Children.Count > 4,
                     "The AI Usage flyout must build sections for every provider.");
@@ -325,6 +325,9 @@ internal static class FeatureAndMemoryChecks
         encoder.Save(ms);
         return ms.ToArray();
     }
+
+    /// <summary>A card's one-line summary, kept for screen readers now that the hover card replaces its tooltip.</summary>
+    private static string Summary(Button card) => System.Windows.Automation.AutomationProperties.GetHelpText(card);
 
     private static Button[] AiCards(AiUsageWidget widget) =>
         ((Panel)widget.Content).Children.OfType<Button>().Where(card => card.Visibility == Visibility.Visible).ToArray();

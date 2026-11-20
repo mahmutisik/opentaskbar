@@ -112,7 +112,7 @@ public sealed class BluetoothBatteryWidget : DockWidget
     {
         var title = UiText.Get("WidgetBluetoothBattery");
         var desc = UiText.Get("WidgetBluetoothBatteryDescription");
-        _cardButton.ToolTip = desc;
+        System.Windows.Automation.AutomationProperties.SetHelpText(_cardButton, desc);
         AutomationProperties.SetName(_cardButton, title);
         AutomationProperties.SetName(this, title);
     }
@@ -194,7 +194,7 @@ public sealed class BluetoothBatteryWidget : DockWidget
             }
 
             var tooltip = string.Join("\n", connected.Select(d => $"{d.Name}: {d.BatteryLevel}%"));
-            _cardButton.ToolTip = tooltip;
+            System.Windows.Automation.AutomationProperties.SetHelpText(_cardButton, tooltip);
             AutomationProperties.SetName(_cardButton, $"{UiText.Get("WidgetBluetoothBattery")}: {lowest.Name} {lowest.BatteryLevel}%");
         }
         else
@@ -203,7 +203,7 @@ public sealed class BluetoothBatteryWidget : DockWidget
             _batteryText.Text = anyConnected ? "—" : UiText.Get("BluetoothNoDevicesAbbr");
             _btIcon.SetResourceReference(ForegroundProperty, anyConnected ? "TextPrimary" : "TextSecondary");
             _batteryText.SetResourceReference(TextBlock.ForegroundProperty, "TextSecondary");
-            _cardButton.ToolTip = UiText.Get("WidgetBluetoothBatteryDescription");
+            System.Windows.Automation.AutomationProperties.SetHelpText(_cardButton, UiText.Get("WidgetBluetoothBatteryDescription"));
             AutomationProperties.SetName(_cardButton, UiText.Get("WidgetBluetoothBattery"));
         }
     }

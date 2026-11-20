@@ -132,11 +132,14 @@ public partial class ClockWidget : DockWidget
                     DateColumn.Visibility = Visibility.Collapsed;
                     break;
             }
-            ClockButton.ToolTip = now.ToString("D", culture);
+            System.Windows.Automation.AutomationProperties.SetHelpText(ClockButton, now.ToString("D", culture));
         }
     }
 
-    private void ClockButton_Click(object sender, RoutedEventArgs e) => _calendar.Toggle(ClockButton, BuildCalendarFlyout);
+    private void ClockButton_Click(object sender, RoutedEventArgs e)
+    {
+        if (!IsHoverFlyoutOpen) _calendar.Toggle(ClockButton, BuildCalendarFlyout);
+    }
 
     public override UIElement? BuildFullHoverFlyoutContent() => BuildCalendarFlyout();
 
