@@ -68,6 +68,8 @@
   "StartupDescription": "Uruchamiaj OpenTaskbar automatycznie po zalogowaniu do systemu Windows.",
   "Animations": "Animacje",
   "AnimationsDescription": "Włącz płynne animacje doku i paneli wysuwanych.",
+  "DockBlur": "Rozmycie szkła",
+  "DockBlurDescription": "Rozmywa to, co jest za dokiem. Gdy jest włączone, rogi odpowiadają zaokrąglonym oknom Windows.",
   "Previews": "Podglądy okien",
   "PreviewsDescription": "Pokazuj miniatury okien po najechaniu kursorem na ikonę aplikacji.",
   "Badges": "Plakietki powiadomień",

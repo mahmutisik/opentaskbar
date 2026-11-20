@@ -68,6 +68,8 @@
   "StartupDescription": "Launch OpenTaskbar when you sign in.",
   "Animations": "Animations",
   "AnimationsDescription": "Launch, hide, and transition motion.",
+  "DockBlur": "Glass blur",
+  "DockBlurDescription": "Blurs what is behind the dock. While on, corners follow Windows' rounded windows.",
   "Previews": "Window previews",
   "PreviewsDescription": "Show open windows when you hover over an icon.",
   "Badges": "Notification indicators",

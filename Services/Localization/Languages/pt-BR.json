@@ -68,6 +68,8 @@
   "StartupDescription": "Iniciar o OpenTaskbar automaticamente ao fazer login.",
   "Animations": "Animações",
   "AnimationsDescription": "Habilitar transições suaves no dock e menus suspensos.",
+  "DockBlur": "Desfoque de vidro",
+  "DockBlurDescription": "Desfoca o que está atrás do dock. Enquanto ativo, os cantos seguem as janelas arredondadas do Windows.",
   "Previews": "Miniaturas de janelas",
   "PreviewsDescription": "Mostrar miniaturas ao passar o mouse sobre aplicativos abertos.",
   "Badges": "Distintivos de notificação",

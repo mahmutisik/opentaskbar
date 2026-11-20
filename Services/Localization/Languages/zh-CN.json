@@ -68,6 +68,8 @@
   "StartupDescription": "登录 Windows 时自动启动 OpenTaskbar。",
   "Animations": "动画效果",
   "AnimationsDescription": "为程序坞及浮窗启用平滑过渡动画。",
+  "DockBlur": "玻璃模糊",
+  "DockBlurDescription": "模糊程序坞后方的内容。开启时，圆角与 Windows 的圆角窗口一致。",
   "Previews": "窗口预览",
   "PreviewsDescription": "鼠标悬停在应用图标上时显示窗口缩略图。",
   "Badges": "通知角标",

@@ -68,6 +68,8 @@
   "StartupDescription": "Démarrer OpenTaskbar automatiquement à la connexion.",
   "Animations": "Animations",
   "AnimationsDescription": "Activer des transitions fluides pour le dock et les volets.",
+  "DockBlur": "Flou de verre",
+  "DockBlurDescription": "Floute ce qui se trouve derrière le dock. Lorsqu'il est actif, les coins suivent les fenêtres arrondies de Windows.",
   "Previews": "Aperçus des fenêtres",
   "PreviewsDescription": "Afficher des miniatures en survolant les applications ouvertes.",
   "Badges": "Pastilles de notification",

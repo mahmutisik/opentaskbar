@@ -5,7 +5,7 @@ using OpenTaskbar.Services;
 
 namespace OpenTaskbar;
 
-/// <summary>PROTOTYPE: keeps the acrylic <see cref="DockAcrylicBackdrop"/> under the dock frame as it moves, resizes and slides.</summary>
+/// <summary>Keeps the blurred <see cref="DockAcrylicBackdrop"/> under the dock frame as it moves, resizes and slides.</summary>
 public partial class MainWindow
 {
     private const int WmWindowPosChanged = 0x0047;
@@ -13,13 +13,6 @@ public partial class MainWindow
 
     private void InitializeDockBackdrop(HwndSource source)
     {
-        _backdrop = DockAcrylicBackdrop.TryCreate(source.Handle, _preferences.Current.Theme);
-        if (_backdrop is null) return;
-
-        // The blur carries the glass now; the dock's own tint gets lighter so the two do not stack into a dark slab.
-        ThemeManager.SetDockGlass(blurred: true);
-        // The glass has the system's rounded corners; the dock frame takes the same radius so nothing sticks out.
-        ApplySizeProfile();
         // Auto-hide slides the surface with this transform; Changed fires on every animation frame.
         DockSurfaceTranslate.Changed += (_, _) => SyncBackdrop();
         DockFrame.LayoutUpdated += (_, _) => SyncBackdrop();
@@ -30,6 +23,29 @@ public partial class MainWindow
             _backdrop?.Dispose();
             _backdrop = null;
         };
+        ApplyDockBlur();
+    }
+
+    /// <summary>Turns the blurred glass on or off to match the DockBlur setting.</summary>
+    private void ApplyDockBlur()
+    {
+        var wanted = _preferences.Current.DockBlur && DockAcrylicBackdrop.IsSupported;
+        if (wanted == _backdrop is not null || _source is not { Handle: not 0 } source) return;
+        if (wanted)
+        {
+            _backdrop = DockAcrylicBackdrop.TryCreate(source.Handle, _preferences.Current.Theme);
+            if (_backdrop is null) return;
+        }
+        else
+        {
+            _backdrop!.Dispose();
+            _backdrop = null;
+        }
+
+        // With the blur carrying the glass, the dock's own tint gets lighter so the two do not stack into a dark slab.
+        ThemeManager.SetDockGlass(blurred: _backdrop is not null);
+        // The glass has the system's rounded corners; the dock frame takes the same radius so nothing sticks out.
+        ApplySizeProfile();
         SyncBackdrop(restack: true);
     }
 

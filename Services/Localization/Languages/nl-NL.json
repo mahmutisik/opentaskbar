@@ -68,6 +68,8 @@
   "StartupDescription": "OpenTaskbar automatisch starten bij het aanmelden bij Windows.",
   "Animations": "Animaties",
   "AnimationsDescription": "Vloeiende overgangsanimaties inschakelen voor het dock en pop-ups.",
+  "DockBlur": "Glasvervaging",
+  "DockBlurDescription": "Vervaagt wat achter het dock ligt. Zolang dit aan staat, volgen de hoeken de afgeronde vensters van Windows.",
   "Previews": "Venstervoorbeelden",
   "PreviewsDescription": "Live voorbeelden tonen wanneer u de muis boven app-pictogrammen houdt.",
   "Badges": "Meldingsbadges",

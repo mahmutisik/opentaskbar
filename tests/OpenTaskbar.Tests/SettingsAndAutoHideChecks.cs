@@ -96,6 +96,7 @@ internal static class SettingsAndAutoHideChecks
                 StartPlacement: StartButtonPlacement.End,
                 Size: DockSize.Compact,
                 SurfaceOpacity: 0.6,
+                DockBlur: false,
                 LauncherHotkey: HotkeyChoice.CtrlSpace,
                 DockHotkey: HotkeyChoice.WinAltD,
                 Widgets: ["Clock", "Media", "SystemStats"],
@@ -158,6 +159,8 @@ internal static class SettingsAndAutoHideChecks
                 "Installed widgets must not be wiped when SettingsWindow is reopened.");
             check(Math.Abs(loadedOpacity(reloaded.Settings) - 0.6) < 0.001,
                 "SurfaceOpacity preference must survive SettingsWindow reopen.");
+            check(!preferences.Current.DockBlur && !reloaded.Settings.DockBlur && new DockSettings().DockBlur,
+                "The glass blur is on by default and a disabled blur must survive SettingsWindow reopen.");
         }
         finally
         {

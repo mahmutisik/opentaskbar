@@ -68,6 +68,8 @@
   "StartupDescription": "サインイン時に OpenTaskbar を自動的に起動します。",
   "Animations": "動き",
   "AnimationsDescription": "起動、非表示、切り替えの動き。",
+  "DockBlur": "ガラスのぼかし",
+  "DockBlurDescription": "ドックの背後をぼかします。オンの間、角は Windows の丸いウィンドウに合わせます。",
   "Previews": "ウィンドウ プレビュー",
   "PreviewsDescription": "アイコンにマウスを重ねると、開いているウィンドウを表示します。",
   "Badges": "通知バッジ",

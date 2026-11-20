@@ -6,7 +6,7 @@ using OpenTaskbar.Models;
 namespace OpenTaskbar.Services;
 
 /// <summary>
-/// PROTOTYPE: frosted glass behind the dock. The dock window is layered (per-pixel alpha), and Windows does not blur
+/// Frosted glass behind the dock. The dock window is layered (per-pixel alpha), and Windows does not blur
 /// behind layered windows, so a separate window with a blur-behind accent sits directly below the dock in z-order,
 /// sized to the dock frame. It is never activated and never takes clicks (the dock covers it, and it reports itself
 /// as transparent to hit testing). Where the dock slides out of its own window (auto-hide), the backdrop is clipped
@@ -59,10 +59,13 @@ internal sealed class DockAcrylicBackdrop : IDisposable
         _theme = theme;
     }
 
-    /// <summary>Creates the backdrop on Windows 11 (22H2 and later); null where the blur is unavailable.</summary>
+    /// <summary>The blur needs Windows 11 22H2 or later, and stays off in high contrast.</summary>
+    public static bool IsSupported => OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621) && !SystemParameters.HighContrast;
+
+    /// <summary>Creates the backdrop where it is supported; null where the blur is unavailable.</summary>
     public static DockAcrylicBackdrop? TryCreate(nint dockHandle, AppTheme theme)
     {
-        if (!OperatingSystem.IsWindowsVersionAtLeast(10, 0, 22621) || SystemParameters.HighContrast) return null;
+        if (!IsSupported) return null;
         var instance = GetModuleHandle(null);
         if (!_classRegistered)
         {

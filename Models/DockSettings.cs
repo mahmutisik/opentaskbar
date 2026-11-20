@@ -128,4 +128,6 @@ public sealed record DockSettings(
     int? DockCornerRadius = null,
     int? DockBottomGap = null,
     AiProviders AiUsageProviders = AiProviders.None,
-    AiUsageRing AiUsageRing = AiUsageRing.Highest);
+    AiUsageRing AiUsageRing = AiUsageRing.Highest,
+    // Blurred glass behind the dock (Windows 11 22H2 and later); while on, the dock uses the system's corner radius.
+    bool DockBlur = true);

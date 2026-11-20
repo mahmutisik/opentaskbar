@@ -68,6 +68,8 @@
   "StartupDescription": "Oturum açtığında OpenTaskbar otomatik başlasın.",
   "Animations": "Animasyonlar",
   "AnimationsDescription": "Açılış, gizlenme ve geçiş hareketleri.",
+  "DockBlur": "Cam bulanıklığı",
+  "DockBlurDescription": "Dock'un arkasını bulanıklaştırır. Açıkken köşeler Windows'un yuvarlak pencere köşelerine uyar.",
   "Previews": "Pencere önizlemeleri",
   "PreviewsDescription": "Simgenin üzerine geldiğinde açık pencereleri göster.",
   "Badges": "Bildirim göstergeleri",

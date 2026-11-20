@@ -1808,6 +1808,7 @@ public partial class MainWindow : Window
         RebuildDockOrder();
         ApplyExtrasSettings();
         ApplyFeatureSettings();
+        ApplyDockBlur();
         ApplySizeProfile();
         ApplyLayoutMode();
         ResizeDockToContent();

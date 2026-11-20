@@ -92,6 +92,8 @@ public partial class SettingsWindow : Window
         SelectLanguage(_applied.Language);
         SelectAlignment(_applied);
         AnimationsToggle.IsChecked = _applied.AnimationsEnabled;
+        DockBlurToggle.IsChecked = _applied.DockBlur;
+        UpdateBlurDependentControls();
         PreviewsToggle.IsChecked = _applied.PreviewsEnabled;
         BadgesToggle.IsChecked = _applied.NotificationBadgesEnabled;
         AutoHideDisabled.IsChecked = _applied.AutoHide == AutoHideMode.Disabled;
@@ -269,6 +271,15 @@ public partial class SettingsWindow : Window
         }
     }
 
+    private void DockBlurToggle_Changed(object sender, RoutedEventArgs e) => UpdateBlurDependentControls();
+
+    /// <summary>The blur needs Windows 11 22H2; while it is on, the dock uses the system's corner radius.</summary>
+    private void UpdateBlurDependentControls()
+    {
+        DockBlurToggle.IsEnabled = DockAcrylicBackdrop.IsSupported;
+        CornerRadiusSlider.IsEnabled = !DockAcrylicBackdrop.IsSupported || DockBlurToggle.IsChecked != true;
+    }
+
     private DockSettings ReadSelection()
     {
         var enabledWidgets = _widgetOptions.Where(option => option.IsInstalled && option.IsEnabled).Select(option => option.Id).ToArray();
@@ -282,6 +293,7 @@ public partial class SettingsWindow : Window
             Position = RightPosition.IsChecked == true ? DockPosition.Right : LeftPosition.IsChecked == true ? DockPosition.Left
                 : CenterPosition.IsChecked == true ? DockPosition.Center : _preferences.Current.Position,
             AnimationsEnabled = AnimationsToggle.IsChecked == true,
+            DockBlur = DockBlurToggle.IsChecked == true,
             PreviewsEnabled = PreviewsToggle.IsChecked == true,
             NotificationBadgesEnabled = BadgesToggle.IsChecked == true,
             AutoHide = AutoHideAlways.IsChecked == true ? AutoHideMode.Always : AutoHideSmart.IsChecked == true ? AutoHideMode.Smart : AutoHideMode.Disabled,
@@ -1026,6 +1038,8 @@ public partial class SettingsWindow : Window
         SelectLanguage(settings.Language);
         SelectAlignment(settings);
         AnimationsToggle.IsChecked = settings.AnimationsEnabled;
+        DockBlurToggle.IsChecked = settings.DockBlur;
+        UpdateBlurDependentControls();
         PreviewsToggle.IsChecked = settings.PreviewsEnabled;
         BadgesToggle.IsChecked = settings.NotificationBadgesEnabled;
         AutoHideDisabled.IsChecked = settings.AutoHide == AutoHideMode.Disabled;

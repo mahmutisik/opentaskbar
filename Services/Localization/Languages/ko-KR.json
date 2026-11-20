@@ -68,6 +68,8 @@
   "StartupDescription": "로그인할 때 OpenTaskbar를 자동으로 시작합니다.",
   "Animations": "애니메이션",
   "AnimationsDescription": "독 및 플라이아웃에 부드러운 전환 효과를 활성화합니다.",
+  "DockBlur": "유리 흐림",
+  "DockBlurDescription": "독 뒤를 흐리게 표시합니다. 켜져 있는 동안 모서리는 Windows의 둥근 창을 따릅니다.",
   "Previews": "창 미리 보기",
   "PreviewsDescription": "실행 중인 앱 아이콘에 마우스를 올릴 때 미리 보기 축소판을 표시합니다.",
   "Badges": "알림 배지",

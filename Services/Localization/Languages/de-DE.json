@@ -68,6 +68,8 @@
   "StartupDescription": "OpenTaskbar beim Anmelden automatisch starten.",
   "Animations": "Animationen",
   "AnimationsDescription": "Flüssige Übergänge für Dock und Flyouts aktivieren.",
+  "DockBlur": "Glasunschärfe",
+  "DockBlurDescription": "Zeichnet den Bereich hinter dem Dock unscharf. Solange aktiv, folgen die Ecken den abgerundeten Windows-Fenstern.",
   "Previews": "Fenstervorschauen",
   "PreviewsDescription": "Miniaturansichten beim Bewegen der Maus über App-Symbole anzeigen.",
   "Badges": "Benachrichtigungspunkte",

@@ -370,6 +370,16 @@
                                 </StackPanel>
                             </DockPanel></Border>
 
+                            <Border Style="{StaticResource SettingsRow}"><DockPanel>
+                                <CheckBox x:Name="DockBlurToggle" DockPanel.Dock="Right" Style="{StaticResource SettingsSwitch}"
+                                          Checked="DockBlurToggle_Changed" Unchecked="DockBlurToggle_Changed"
+                                          AutomationProperties.Name="{local:Loc DockBlur}" AutomationProperties.HelpText="{local:Loc DockBlurDescription}" />
+                                <StackPanel VerticalAlignment="Center" Margin="0,0,16,0">
+                                    <TextBlock Text="{local:Loc DockBlur}" Style="{StaticResource SettingsRowLabel}" />
+                                    <TextBlock Text="{local:Loc DockBlurDescription}" Style="{StaticResource SettingsRowDescription}" />
+                                </StackPanel>
+                            </DockPanel></Border>
+
                             <!-- Widget density -->
                             <Border Style="{StaticResource SettingsRow}"><DockPanel>
                                 <Border DockPanel.Dock="Right" Width="240" Height="32" CornerRadius="7" Background="{DynamicResource SettingsControl}" BorderBrush="{DynamicResource StrokeSubtle}" BorderThickness="1" Padding="2" VerticalAlignment="Center">

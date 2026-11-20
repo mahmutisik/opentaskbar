@@ -68,6 +68,8 @@
   "StartupDescription": "Avvia automaticamente OpenTaskbar all'accesso.",
   "Animations": "Animazioni",
   "AnimationsDescription": "Abilita transizioni fluide per il dock e i menu a comparsa.",
+  "DockBlur": "Sfocatura vetro",
+  "DockBlurDescription": "Sfoca ciò che sta dietro il dock. Quando è attiva, gli angoli seguono le finestre arrotondate di Windows.",
   "Previews": "Anteprime finestre",
   "PreviewsDescription": "Mostra anteprime al passaggio del mouse sulle icone delle app aperte.",
   "Badges": "Badge di notifica",
