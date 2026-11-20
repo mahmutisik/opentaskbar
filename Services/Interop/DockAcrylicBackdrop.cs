@@ -129,6 +129,9 @@ internal sealed class DockAcrylicBackdrop : IDisposable
         DwmSetWindowAttribute(_handle, 20, ref dark, sizeof(int));
         var cornerResult = DwmSetWindowAttribute(_handle, 33, ref corners, sizeof(int));
         DwmSetWindowAttribute(_handle, 34, ref noBorder, sizeof(int));
+        // DWMWA_EXCLUDED_FROM_PEEK: the glass stays under the dock while a preview peeks a window.
+        var excludedFromPeek = 1;
+        DwmSetWindowAttribute(_handle, 12, ref excludedFromPeek, sizeof(int));
         var frameResult = DwmExtendFrameIntoClientArea(_handle, ref margins);
         var blurred = EnableBlurBehind(_handle);
         if (cornerResult < 0 || frameResult < 0 || !blurred)

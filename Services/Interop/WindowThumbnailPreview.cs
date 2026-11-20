@@ -15,6 +15,7 @@ namespace OpenTaskbar.Services;
 public sealed class WindowThumbnailPreview : IDisposable
 {
     private const uint DwmThumbnailRectDestination = 0x00000001;
+    private const int DwmwaExcludedFromPeek = 12;
     private const int DwmwaWindowCornerPreference = 33;
     private const int DwmwaBorderColor = 34;
     private const int DwmwcpRound = 2;
@@ -29,7 +30,13 @@ public sealed class WindowThumbnailPreview : IDisposable
     private static readonly nint HwndTopmost = new(-1);
 
     private readonly Style _closeButtonStyle;
+    private static readonly TimeSpan PeekDelay = TimeSpan.FromMilliseconds(500);
     private readonly DispatcherTimer _entranceTimer;
+    private readonly DispatcherTimer _peekTimer;
+    private nint _peekCandidate;
+    private nint _peekedWindow;
+    private nint _peekCaller;
+    private long _peekEndedAt;
     private readonly double _entranceDurationMs;
     private readonly List<(nint Source, nint Thumbnail, NativeRect TargetRect)> _activeThumbnails = [];
     private Window? _window;
@@ -54,6 +61,8 @@ public sealed class WindowThumbnailPreview : IDisposable
             Interval = TimeSpan.FromMilliseconds(16)
         };
         _entranceTimer.Tick += EntranceTimer_Tick;
+        _peekTimer = new DispatcherTimer(DispatcherPriority.Normal) { Interval = PeekDelay };
+        _peekTimer.Tick += PeekTimer_Tick;
     }
 
     private void EnsureWindows()
@@ -217,6 +226,8 @@ public sealed class WindowThumbnailPreview : IDisposable
         }
 
         _destinationHandle = new WindowInteropHelper(previewWindow).Handle;
+        _peekCaller = Window.GetWindow(anchor) is { } dockWindow ? new WindowInteropHelper(dockWindow).Handle : 0;
+        if (_peekCaller != 0) ExcludeFromPeek(_peekCaller);
         if (_destinationHandle == 0 || !PositionWindow(anchor, totalWidth, totalHeight))
         {
             Hide();
@@ -343,11 +354,13 @@ public sealed class WindowThumbnailPreview : IDisposable
             {
                 headerSurface.BorderBrush = focusStroke;
                 bodySurface.BorderBrush = focusStroke;
+                SchedulePeek(handle);
             };
             overlayCard.MouseLeave += (_, _) =>
             {
                 headerSurface.BorderBrush = strokeBrush;
                 bodySurface.BorderBrush = strokeBrush;
+                EndPeek();
             };
             overlayCard.MouseLeftButtonDown += (_, e) =>
             {
@@ -429,6 +442,78 @@ public sealed class WindowThumbnailPreview : IDisposable
         return true;
     }
 
+    /// <summary>
+    /// Peek, as on the Windows taskbar: resting on a preview shows that window in place and turns the others to glass.
+    /// Windows has no public API for it; this is the DWM call other taskbars use, through ManagedShell. It follows the
+    /// "Enable Peek" setting in Windows.
+    /// </summary>
+    private void SchedulePeek(nint window)
+    {
+        if (!IsPeekEnabled()) return;
+        _peekTimer.Stop();
+        _peekCandidate = window;
+        // Moving from one preview to the next keeps peeking without waiting again.
+        if (Environment.TickCount64 - _peekEndedAt < 250)
+        {
+            Peek(window);
+            return;
+        }
+
+        _peekTimer.Start();
+    }
+
+    private void PeekTimer_Tick(object? sender, EventArgs e)
+    {
+        _peekTimer.Stop();
+        if (_peekCandidate != 0 && _window is { IsVisible: true }) Peek(_peekCandidate);
+    }
+
+    private void Peek(nint window)
+    {
+        if (!IsWindow(window)) return;
+        try
+        {
+            ManagedShell.Common.Helpers.WindowHelper.PeekWindow(true, window, _peekCaller);
+            _peekedWindow = window;
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException or ExternalException)
+        {
+            AppLog.Warning($"Window peek failed: {ex.Message}");
+        }
+    }
+
+    private void EndPeek()
+    {
+        _peekTimer.Stop();
+        _peekCandidate = 0;
+        if (_peekedWindow == 0) return;
+        var peeked = _peekedWindow;
+        _peekedWindow = 0;
+        _peekEndedAt = Environment.TickCount64;
+        try
+        {
+            ManagedShell.Common.Helpers.WindowHelper.PeekWindow(false, peeked, _peekCaller);
+        }
+        catch (Exception ex) when (ex is EntryPointNotFoundException or DllNotFoundException or ExternalException)
+        {
+            AppLog.Warning($"Window peek failed: {ex.Message}");
+        }
+    }
+
+    /// <summary>Windows' "Enable Peek" setting; on unless turned off.</summary>
+    private static bool IsPeekEnabled()
+    {
+        using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Microsoft\Windows\DWM");
+        return key?.GetValue("EnableAeroPeek") is not int value || value != 0;
+    }
+
+    /// <summary>Keeps a window drawn while another one is peeked: the dock and the preview itself.</summary>
+    private static void ExcludeFromPeek(nint window)
+    {
+        var excluded = 1;
+        _ = DwmSetWindowAttribute(window, DwmwaExcludedFromPeek, ref excluded, sizeof(int));
+    }
+
     private void EntranceTimer_Tick(object? sender, EventArgs e)
     {
         if (_activeThumbnails.Count == 0 || _window is not { IsVisible: true })
@@ -461,6 +546,7 @@ public sealed class WindowThumbnailPreview : IDisposable
 
     public void Hide()
     {
+        EndPeek();
         _entranceTimer.Stop();
         ReleaseThumbnails();
         _sourceHandle = 0;
@@ -489,6 +575,7 @@ public sealed class WindowThumbnailPreview : IDisposable
         Hide();
         _disposed = true;
         _entranceTimer.Tick -= EntranceTimer_Tick;
+        _peekTimer.Tick -= PeekTimer_Tick;
         if (_window is not null)
         {
             _window.Closed -= Window_Closed;
@@ -656,6 +743,7 @@ public sealed class WindowThumbnailPreview : IDisposable
         if (sender is Window window && PresentationSource.FromVisual(window) is HwndSource source)
         {
             MainWindow.ExcludeFromTaskSwitcher(source.Handle);
+            ExcludeFromPeek(source.Handle);
             source.AddHook(PreviewWindowProc);
         }
     }
