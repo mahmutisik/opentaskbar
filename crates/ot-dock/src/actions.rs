@@ -175,6 +175,56 @@ fn spawn_verb(
 
 /// On a helper thread: opening a shell folder can block for a while, and the UI thread must stay free so the
 /// click's bounce animation starts at once.
+/// Files dropped on the Recycle Bin item go to the Recycle Bin, on a helper thread (the Shell may show progress or
+/// a question): undoable and without the "move to Recycle Bin?" question, as a drop on Explorer's Recycle Bin, but
+/// Windows still warns before a file that cannot be recycled would be destroyed.
+pub fn recycle_files(files: Vec<String>) {
+    let spawned = std::thread::Builder::new()
+        .name("ot-recycle".into())
+        .spawn(move || {
+            use windows::Win32::UI::Shell::{
+                FO_DELETE, FOF_ALLOWUNDO, FOF_NOCONFIRMATION, FOF_WANTNUKEWARNING, SHFILEOPSTRUCTW,
+                SHFileOperationW,
+            };
+            // SAFETY: COM for the Shell on this thread.
+            let _ = unsafe {
+                windows::Win32::System::Com::CoInitializeEx(
+                    None,
+                    windows::Win32::System::Com::COINIT_APARTMENTTHREADED,
+                )
+            };
+            // Paths separated by NULs and ended by two.
+            let mut from: Vec<u16> = Vec::new();
+            for file in &files {
+                from.extend(file.encode_utf16());
+                from.push(0);
+            }
+            from.push(0);
+            let mut operation = SHFILEOPSTRUCTW {
+                wFunc: FO_DELETE,
+                pFrom: windows::core::PCWSTR(from.as_ptr()),
+                fFlags: (FOF_ALLOWUNDO | FOF_NOCONFIRMATION | FOF_WANTNUKEWARNING).0 as u16,
+                ..Default::default()
+            };
+            // SAFETY: the structure and the path list outlive the call.
+            let result = unsafe { SHFileOperationW(&mut operation) };
+            if result == 0 && !operation.fAnyOperationsAborted.as_bool() {
+                ot_core::log::info(format!(
+                    "{} dropped item(s) moved to the Recycle Bin.",
+                    files.len()
+                ));
+            } else {
+                ot_core::log::warn(format!(
+                    "Recycle Bin drop: {} item(s) not all recycled (code {result}).",
+                    files.len()
+                ));
+            }
+        });
+    if let Err(error) = spawned {
+        ot_core::log::warn(format!("Recycle Bin drop failed to start: {error}"));
+    }
+}
+
 pub fn open_recycle_bin() -> bool {
     spawn_verb(
         "open",

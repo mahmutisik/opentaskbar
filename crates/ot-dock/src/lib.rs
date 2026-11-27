@@ -5,6 +5,7 @@ pub mod actions;
 pub mod app_name;
 pub mod autohide;
 pub mod dock;
+pub mod drop_target;
 pub mod fisheye;
 pub mod frame_clock;
 pub mod hotkey;

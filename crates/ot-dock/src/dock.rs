@@ -525,8 +525,12 @@ pub fn start(settings: DockSettings) -> std::result::Result<(), &'static str> {
             windows::Win32::System::Com::COINIT_APARTMENTTHREADED,
         )
     };
+    // OLE for the drop target (the Recycle Bin item accepts dropped files).
+    // SAFETY: on this STA thread, balanced by the process exit.
+    let _ = unsafe { windows::Win32::System::Ole::OleInitialize(None) };
     memory_mark("before window");
     let hwnd = create_window().ok_or("ErrorDockWindow")?;
+    crate::drop_target::register(hwnd);
     let dock = match Dock::new(hwnd, settings) {
         Ok(dock) => dock,
         Err(error) => {
@@ -652,6 +656,31 @@ fn persist(settings: &DockSettings) {
     PERSIST.with(|slot| match slot.borrow().as_ref() {
         Some(save) => save(settings),
         None => log::info("Settings changed by the dock are not saved (read-only settings)."),
+    });
+}
+
+/// Whether the screen point is over the Recycle Bin item (the drop target asks during a drag).
+pub(crate) fn recycle_bin_at(x: i32, y: i32) -> bool {
+    with_dock(|dock| {
+        let mut p = POINT { x, y };
+        // SAFETY: our own window.
+        unsafe { windows_sys::Win32::Graphics::Gdi::ScreenToClient(dock.hwnd as HWND, &mut p) };
+        dock.hit_test(p.x, p.y)
+            .is_some_and(|i| matches!(dock.items[i].kind, ItemKind::RecycleBin))
+    })
+    .unwrap_or(false)
+}
+
+/// Files were dropped on the Recycle Bin: it bounces, as on a click.
+pub(crate) fn recycle_bin_dropped() {
+    with_dock(|dock| {
+        if let Some(index) = dock
+            .items
+            .iter()
+            .position(|item| matches!(item.kind, ItemKind::RecycleBin))
+        {
+            dock.bounce(index);
+        }
     });
 }
 
@@ -6565,6 +6594,7 @@ unsafe extern "system" fn window_proc(
             unsafe {
                 windows_sys::Win32::System::RemoteDesktop::WTSUnRegisterSessionNotification(hwnd)
             };
+            crate::drop_target::revoke(hwnd as isize);
             uia::disconnect(hwnd as isize);
             UIA.with(|slot| slot.borrow_mut().take());
             if QUIT_ON_CLOSE.with(std::cell::Cell::get) {
