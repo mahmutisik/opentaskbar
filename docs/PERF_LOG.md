@@ -118,3 +118,4 @@ Audio mixer flyout (`audio-flyout-perf.ps1`, scratchpad; test dock with a copy o
 
 Settings window (`settings-mem.ps1`, scratchpad; test dock on a copy of the user's settings with `--settings`): dock process 22.1 MB private with Settings open, six WebView2 processes 177.3 MB private; 5 s after closing: dock 22.7 MB, no WebView2 process.
 
+Pin reading (`--icon-test`, the user's 10 taskbar pins): looking up the Settings shortcut in the Apps folder inline made the first read 0.86–0.90 s (16 ms once cached). With the lookup moved to a worker: pin read 95 ms cold, the lookup plus a second read 0.79 s off the dock's thread.

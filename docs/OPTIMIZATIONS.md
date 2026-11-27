@@ -105,4 +105,4 @@ Catalog numbers: `cargo run -p ot-core --release --example catalog_cost`, 3 runs
 - **Settings load:** out-of-range numbers are brought into their range (a non-number takes the default) instead of replacing the whole file with defaults; the change and, when a file is still refused, the failing rule are logged. Saving stays strict. This differs from OpenTaskbar, which rejects the file.
 - **Callbacks from outside:** a panic in the window-event hook or while parsing another process's tray message no longer aborts the dock (`catch_unwind`); the panic hook logs it.
 - **Recovery journal:** the journal is written through a temporary file named per write, and replaced by delete-then-rename when a plain rename fails.
-
+- **Pin identity lookup:** a pinned shortcut that points at a shared host and stores no app ID is looked up in the Apps folder by name on a worker thread (about 0.8 s), never on the dock's thread; answers are kept per name, so reordering pins does not repeat it.
