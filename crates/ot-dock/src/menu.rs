@@ -177,6 +177,7 @@ pub fn open(
         menu.scale = scale;
         menu.hover = None;
         menu.layout();
+        menu.fit_to_screen();
         let (w, h) = (
             (menu.width * scale).ceil() as i32,
             (menu.height * scale).ceil() as i32,
@@ -225,6 +226,13 @@ pub fn set_leading(entries: Vec<Entry>) {
         menu.bitmaps.clear();
         menu.hover = menu.hover.and_then(|h| (h >= old).then(|| h - old + new));
         menu.layout();
+        let before = menu.entries.len();
+        menu.fit_to_screen();
+        // Entries removed from the jump list shift the commands below it.
+        let removed = before - menu.entries.len();
+        menu.hover = menu
+            .hover
+            .and_then(|h| h.checked_sub(removed).filter(|&h| h >= menu.leading));
         if let Err(error) = menu.render() {
             ot_core::log::warn(format!("Menu drawing failed: {error}"));
             return None;
@@ -285,6 +293,49 @@ pub fn close() {
             wm::PostMessageW(owner as HWND, WM_MENU_CLOSED, 0, 0);
         }
     }
+}
+
+/// The taller of the spaces above and below `point` on its monitor, less a small margin: the most a menu opened
+/// there can use.
+fn available_height(point: (i32, i32)) -> Option<i32> {
+    let mut info: MONITORINFO = unsafe { std::mem::zeroed() };
+    info.cbSize = size_of::<MONITORINFO>() as u32;
+    // SAFETY: plain Win32 calls with a sized out struct.
+    let m = unsafe {
+        let handle = MonitorFromPoint(
+            POINT {
+                x: point.0,
+                y: point.1,
+            },
+            MONITOR_DEFAULTTONEAREST,
+        );
+        (GetMonitorInfoW(handle, &mut info) != 0).then_some(info.rcMonitor)?
+    };
+    Some(((point.1 - m.top).max(m.bottom - point.1) - 8).max(0))
+}
+
+/// Which leading entries to drop so the menu fits: the last jump list entries go first, and a group title is dropped
+/// with its last entry. `heights` are the entries' row heights; returns the indexes to remove.
+fn trim_plan(entries: &[Entry], leading: usize, heights: &[f32], mut excess: f32) -> Vec<usize> {
+    let mut removed = Vec::new();
+    let mut index = leading;
+    while excess > 0.0 && index > 0 {
+        index -= 1;
+        if !matches!(entries[index], Entry::Task { .. }) {
+            continue;
+        }
+        removed.push(index);
+        excess -= heights[index];
+        // A title whose group is now empty goes too.
+        let next_kept = (index + 1..leading).find(|i| !removed.contains(i));
+        let group_empty = next_kept.is_none_or(|i| !matches!(entries[i], Entry::Task { .. }));
+        if group_empty && index > 0 && matches!(entries[index - 1], Entry::Heading(_)) {
+            removed.push(index - 1);
+            excess -= heights[index - 1];
+            index -= 1;
+        }
+    }
+    removed
 }
 
 /// WPF's MousePoint placement: below and right of the pointer, flipped up or left when the monitor ends.
@@ -521,6 +572,34 @@ impl Menu {
         let format = self.heading_format.as_ref().unwrap_or(&self.format);
         let (_, line) = self.metrics("Ag", format);
         (line * self.scale).round() / self.scale + HEADING_PAD_Y * 2.0
+    }
+
+    /// A long jump list (dozens of recent files) made the menu taller than the screen: the last jump list entries
+    /// are left out until the menu fits above or below the pointer. The app's own commands always stay.
+    fn fit_to_screen(&mut self) {
+        let Some(available) = available_height(self.point) else {
+            return;
+        };
+        let limit = available as f32 / self.scale.max(0.01);
+        if self.height <= limit || self.leading == 0 {
+            return;
+        }
+        let heights: Vec<f32> = self.rows.iter().map(|&(_, h)| h).collect();
+        let mut removed = trim_plan(&self.entries, self.leading, &heights, self.height - limit);
+        if removed.is_empty() {
+            return;
+        }
+        removed.sort_unstable();
+        let count = removed.len();
+        for index in removed.into_iter().rev() {
+            self.entries.remove(index);
+        }
+        self.leading -= count;
+        self.bitmaps.clear();
+        self.layout();
+        ot_core::log::info(format!(
+            "Menu: {count} jump list entries left out to fit the screen."
+        ));
     }
 
     fn layout(&mut self) {
@@ -959,6 +1038,37 @@ unsafe extern "system" fn window_proc(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn long_jump_lists_are_trimmed_from_the_end() {
+        let task = |n: u32| Entry::Task {
+            command: n,
+            label: n.to_string(),
+            image: None,
+        };
+        let entries = vec![
+            Entry::Heading("Pinned".into()),
+            task(1),
+            Entry::Heading("Recent".into()),
+            task(2),
+            task(3),
+            Entry::Separator,
+            Entry::Item {
+                command: 9,
+                label: "Close".into(),
+                icon: None,
+                destructive: false,
+                enabled: true,
+            },
+        ];
+        let heights = [20.0, 30.0, 20.0, 30.0, 30.0, 10.0, 30.0];
+        // One row too many: the last recent entry goes.
+        assert_eq!(trim_plan(&entries, 6, &heights, 10.0), vec![4]);
+        // Both recent entries: their title goes with them.
+        let mut plan = trim_plan(&entries, 6, &heights, 50.0);
+        plan.sort_unstable();
+        assert_eq!(plan, vec![2, 3, 4]);
+    }
 
     #[test]
     fn places_like_wpf_mouse_point() {
