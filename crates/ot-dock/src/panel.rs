@@ -1737,10 +1737,15 @@ unsafe extern "system" fn panel_proc(
                             });
                             Down::None
                         } else {
-                            // On the track: the thumb jumps under the pointer (`IsMoveToPointEnabled`); a drag
-                            // that follows does not move it (the track, not the thumb, has the press).
-                            p.drag = Some(Drag::Button(0));
+                            // On the track: the thumb jumps under the pointer (`IsMoveToPointEnabled`) and then
+                            // follows it while the button is held, so a drag can start anywhere on the slider (the
+                            // user's request; WPF only drags from the thumb).
                             let v = p.slider_value(id, cx).unwrap_or(value);
+                            p.drag = Some(Drag::Thumb {
+                                id,
+                                start_x: cx,
+                                start_value: v,
+                            });
                             Down::Jump(id, v)
                         }
                     }
