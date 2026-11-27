@@ -1,0 +1,24 @@
+[package]
+name = "ot-app"
+description = "OpenTaskBar-Rust executable."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[[bin]]
+name = "OpenTaskBar"
+path = "src/main.rs"
+
+[dependencies]
+ot-core = { path = "../ot-core" }
+ot-shell = { path = "../ot-shell" }
+ot-dock = { path = "../ot-dock" }
+ot-ui = { path = "../ot-ui" }
+
+[target.'cfg(windows)'.dependencies.windows-sys]
+workspace = true
+
+[lints]
+workspace = true

@@ -1,0 +1,23 @@
+[package]
+name = "ot-ui"
+description = "First-run setup wizard for OpenTaskBar-Rust: a WebView2 page with live dock preview."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ot-core = { path = "../ot-core" }
+ot-dock = { path = "../ot-dock" }
+ot-render = { path = "../ot-render" }
+serde.workspace = true
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+wry.workspace = true
+raw-window-handle.workspace = true
+windows-sys.workspace = true
+
+[lints]
+workspace = true

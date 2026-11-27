@@ -1,0 +1,18 @@
+[package]
+name = "ot-render"
+description = "Composition renderer for OpenTaskBar-Rust: Windows.UI.Composition visuals on a desktop window, Direct2D surfaces for icons and glyphs."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+windows-numerics.workspace = true
+
+[lints]
+workspace = true
+
+[target.'cfg(windows)'.dev-dependencies]
+windows-sys.workspace = true

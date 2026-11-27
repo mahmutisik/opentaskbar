@@ -1,0 +1,46 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>OpenTaskbar</title>
+<style>/*@CSS*/</style>
+</head>
+<body>
+<div class="frame" id="frame">
+  <header class="titlebar" id="titlebar">
+    <div class="brand">
+      <span class="brand-mark"><span></span></span>
+      <span class="brand-name">OpenTaskbar</span>
+      <span class="brand-version" id="version"></span>
+    </div>
+    <div class="search-host">
+      <label class="search" id="search">
+        <svg viewBox="0 0 24 24" class="search-icon"><path d="M11 19a8 8 0 1 0 0-16a8 8 0 0 0 0 16z M21 21l-4.3-4.3"/></svg>
+        <input id="search-input" type="text" spellcheck="false" autocomplete="off">
+        <span class="search-placeholder" id="search-placeholder"></span>
+        <button class="search-clear" id="search-clear" hidden>
+          <svg viewBox="0 0 24 24"><path d="M18 6L6 18 M6 6l12 12"/></svg>
+        </button>
+      </label>
+    </div>
+    <div class="captions">
+      <button class="caption" id="btn-min">&#xE921;</button>
+      <button class="caption" id="btn-max">&#xE922;</button>
+      <button class="caption close" id="btn-close">&#xE8BB;</button>
+    </div>
+  </header>
+  <div class="body">
+    <nav class="sidebar" id="sidebar">
+      <div class="nav-top" id="nav-top"></div>
+      <div class="nav-divider"></div>
+      <div class="nav-bottom" id="nav-bottom"></div>
+    </nav>
+    <main class="content" id="content"></main>
+  </div>
+  <div class="sheen"></div>
+  <div class="rim" id="rim"></div>
+</div>
+<script>/*@SCRIPT*/</script>
+</body>
+</html>

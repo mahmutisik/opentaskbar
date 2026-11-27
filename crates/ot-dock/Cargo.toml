@@ -1,0 +1,22 @@
+[package]
+name = "ot-dock"
+description = "The dock itself for OpenTaskBar-Rust: items, layout, visuals and the dock window."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ot-core = { path = "../ot-core" }
+ot-shell = { path = "../ot-shell" }
+ot-render = { path = "../ot-render" }
+serde_json.workspace = true
+
+[target.'cfg(windows)'.dependencies]
+windows.workspace = true
+windows-core.workspace = true
+windows-sys.workspace = true
+
+[lints]
+workspace = true

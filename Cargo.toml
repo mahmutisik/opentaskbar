@@ -1,0 +1,99 @@
+[workspace]
+resolver = "3"
+members = ["crates/ot-core", "crates/ot-shell", "crates/ot-render", "crates/ot-dock", "crates/ot-ui", "crates/ot-app"]
+
+[workspace.package]
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.100"
+license = "MIT"
+repository = "https://github.com/mahmutisik/opentaskbar"
+
+[workspace.dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+indexmap = { version = "2", features = ["serde"] }
+windows = { version = "0.62", features = [
+    "Foundation",
+    "Foundation_Numerics",
+    "Graphics",
+    "Graphics_DirectX",
+    "System",
+    "UI",
+    "UI_Composition",
+    "UI_Composition_Desktop",
+    "Win32_Foundation",
+    "Win32_Graphics_Direct2D",
+    "Win32_Graphics_Direct2D_Common",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+    "Win32_Graphics_DirectWrite",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Gdi",
+    "Win32_Graphics_Imaging",
+    "Win32_Media_Audio",
+    "Win32_Media_Audio_Endpoints",
+    "Win32_Devices_FunctionDiscovery",
+    "Win32_System_Ole",
+    "Win32_System_WinRT",
+    "Win32_System_WinRT_Composition",
+    "Win32_UI_Accessibility",
+    "Win32_Storage_EnhancedStorage",
+    "Win32_Storage_FileSystem",
+    "Win32_System_Com",
+    "Win32_System_Com_StructuredStorage",
+    "Win32_System_Variant",
+    "Win32_UI_Shell",
+    "Win32_UI_Shell_PropertiesSystem",
+    "Win32_UI_WindowsAndMessaging",
+    "Win32_System_Environment",
+] }
+windows-numerics = "0.3.1"
+windows-core = "0.62"
+wry = "0.57"
+raw-window-handle = "0.6"
+windows-sys = { version = "0.61", features = [
+    "Win32_Foundation",
+    "Win32_Graphics_Dwm",
+    "Win32_Graphics_Gdi",
+    "Win32_Security",
+    "Win32_System_Com",
+    "Win32_System_Console",
+    "Win32_System_DataExchange",
+    "Win32_Globalization",
+    "Win32_System_SystemInformation",
+    "Win32_System_Power",
+    "Win32_System_Time",
+    "Win32_Networking_WinHttp",
+    "Win32_Security_Credentials",
+    "Win32_System_Diagnostics_ToolHelp",
+    "Win32_System_LibraryLoader",
+    "Win32_System_ProcessStatus",
+    "Win32_System_Registry",
+    "Win32_System_RemoteDesktop",
+    "Win32_UI_Accessibility",
+    "Win32_System_Threading",
+    "Win32_UI_Controls",
+    "Win32_UI_Controls_Dialogs",
+    "Win32_UI_HiDpi",
+    "Win32_UI_Input_KeyboardAndMouse",
+    "Win32_UI_Shell",
+    "Win32_UI_WindowsAndMessaging",
+] }
+
+[workspace.lints.rust]
+unsafe_op_in_unsafe_fn = "deny"
+
+[workspace.lints.clippy]
+all = { level = "warn", priority = -1 }
+
+[profile.release]
+# Whole-program optimization and a single codegen unit: smaller and faster binary for a long-running shell process.
+lto = "fat"
+codegen-units = 1
+strip = "symbols"
+
+[profile.dev.package."*"]
+# Dependencies optimized even in debug builds so local runs stay representative.
+opt-level = 2

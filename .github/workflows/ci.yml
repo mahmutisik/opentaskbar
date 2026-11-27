@@ -1,51 +1,28 @@
-name: Continuous Integration
+name: CI
 
 on:
   push:
-    branches:
-      - master
+    branches: [master]
   pull_request:
-    branches:
-      - master
-      - redesign
 
 permissions:
   contents: read
 
 jobs:
-  build-and-test:
-    name: Build & Test (Windows x64)
+  build:
     runs-on: windows-latest
-
     steps:
-      - name: Check out repository
-        uses: actions/checkout@v4
-
-      - name: Set up .NET 10 SDK
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '10.0.x'
-
-      - name: Restore dependencies
-        run: dotnet restore OpenTaskbar.csproj
-
-      - name: Build solution (Release, WarnAsError)
-        run: dotnet build OpenTaskbar.csproj --configuration Release --warnaserror --no-restore
-
-      - name: Run behavior and contract test suite
-        run: dotnet run --project tests/OpenTaskbar.Tests/OpenTaskbar.Tests.csproj --configuration Release
-
-      - name: Verify portable EXE starts without sidecar DLLs
-        shell: pwsh
+      - uses: actions/checkout@v4
+      - name: Toolchain
         run: |
-          & "scripts/publish-portable.ps1" -OutputDir release
-          & "scripts/check-portable.ps1" -OutputDir release
-
-      - name: Upload Windows preview build
-        if: github.event_name == 'pull_request'
-        uses: actions/upload-artifact@v4
-        with:
-          name: OpenTaskbar-redesign-preview
-          path: release/
-          if-no-files-found: error
-          retention-days: 7
+          rustup toolchain install stable --profile minimal --component clippy,rustfmt
+          rustup default stable
+      - uses: Swatinem/rust-cache@v2
+      - name: Format
+        run: cargo fmt --all --check
+      - name: Clippy
+        run: cargo clippy --workspace --all-targets -- -D warnings
+      - name: Test
+        run: cargo test --workspace
+      - name: Release build
+        run: cargo build --workspace --release

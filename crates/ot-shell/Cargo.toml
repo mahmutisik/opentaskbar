@@ -1,0 +1,18 @@
+[package]
+name = "ot-shell"
+description = "Explorer taskbar replacement for OpenTaskBar-Rust: hiding and restoring the native taskbar, AppBar reservation, recovery journals and the watchdog."
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+repository.workspace = true
+
+[dependencies]
+ot-core = { path = "../ot-core" }
+
+[target.'cfg(windows)'.dependencies]
+windows-sys.workspace = true
+windows.workspace = true
+
+[lints]
+workspace = true
