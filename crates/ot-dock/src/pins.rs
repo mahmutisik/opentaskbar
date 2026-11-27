@@ -151,9 +151,27 @@ fn read_shortcut(path: &Path) -> Option<Pin> {
         let icon = from_wide(&icon);
         let executable_path = resolve_executable(&target, &icon)?;
         let arguments = from_wide(&arguments);
-        let app_user_model_id = packaged_app_id(&executable_path);
+        // The shortcut's own `System.AppUserModel.ID` first: a pinned Store app (Settings, …) points at a shared
+        // host (ApplicationFrameHost.exe) and only this property says which app it is.
+        let stored_id = link
+            .cast::<windows::Win32::UI::Shell::PropertiesSystem::IPropertyStore>()
+            .ok()
+            .and_then(|store| {
+                crate::jumplist::read_string(&store, &crate::jumplist::APP_ID_KEY).ok()
+            })
+            .flatten()
+            .map(|id| id.trim().to_owned())
+            .filter(|id| !id.is_empty());
+        let name = path.file_stem()?.to_string_lossy().into_owned();
+        let app_user_model_id = stored_id
+            .or_else(|| {
+                is_shared_host(&executable_path)
+                    .then(|| apps_folder_app_id(&name))
+                    .flatten()
+            })
+            .or_else(|| packaged_app_id(&executable_path));
         Some(Pin {
-            name: path.file_stem()?.to_string_lossy().into_owned(),
+            name,
             executable_path,
             arguments: (!arguments.trim().is_empty()).then_some(arguments),
             shortcut_path: path.to_path_buf(),
@@ -161,6 +179,154 @@ fn read_shortcut(path: &Path) -> Option<Pin> {
             app_user_model_id,
         })
     }
+}
+
+/// Apps-folder answers by shortcut name (`None`: no app of that name).
+static FOUND: std::sync::Mutex<Vec<(String, Option<String>)>> = std::sync::Mutex::new(Vec::new());
+/// Names read since the last lookup that are not in `FOUND` yet.
+static PENDING: std::sync::Mutex<Vec<String>> = std::sync::Mutex::new(Vec::new());
+
+/// The identity of the Apps-folder entry named like the shortcut. Settings is pinned this way: its target is
+/// ApplicationFrameHost.exe and the shortcut stores no `System.AppUserModel.ID`, so the shortcut's name (the app's
+/// localized display name, "Ayarlar") is the only link to the app. Used only for shared-host shortcuts.
+///
+/// Walking the Apps folder takes most of a second, so this only answers from `FOUND`; an unknown name is queued
+/// for [`resolve_in_background`] / [`resolve_now`].
+fn apps_folder_app_id(name: &str) -> Option<String> {
+    let name = name.trim();
+    if name.is_empty() {
+        return None;
+    }
+    if let Some((_, id)) = FOUND.lock().ok()?.iter().find(|(known, _)| known == name) {
+        return id.clone();
+    }
+    if let Ok(mut pending) = PENDING.lock()
+        && !pending.iter().any(|known| known == name)
+    {
+        pending.push(name.to_owned());
+    }
+    None
+}
+
+/// Looks up the queued shortcut names on this thread (COM must be initialized); true when any was queued.
+pub fn resolve_now() -> bool {
+    let names = PENDING
+        .lock()
+        .map(|mut p| std::mem::take(&mut *p))
+        .unwrap_or_default();
+    if names.is_empty() {
+        return false;
+    }
+    let ids: Vec<_> = names.iter().map(|name| find_in_apps_folder(name)).collect();
+    if let Ok(mut found) = FOUND.lock() {
+        found.extend(names.into_iter().zip(ids));
+    }
+    true
+}
+
+/// Looks up the queued shortcut names on a worker thread, then calls `done` (to read the pins again) when any
+/// of them was found. Does nothing when nothing is queued.
+pub fn resolve_in_background(done: impl FnOnce() + Send + 'static) {
+    if PENDING.lock().is_ok_and(|p| p.is_empty()) {
+        return;
+    }
+    let _ = std::thread::Builder::new()
+        .name("pin-apps-folder".into())
+        .spawn(move || {
+            // SAFETY: COM for this thread only, released before it ends.
+            let com = unsafe {
+                windows::Win32::System::Com::CoInitializeEx(
+                    None,
+                    windows::Win32::System::Com::COINIT_APARTMENTTHREADED,
+                )
+            }
+            .is_ok();
+            let before = FOUND
+                .lock()
+                .map(|f| f.iter().filter(|(_, id)| id.is_some()).count())
+                .unwrap_or(0);
+            resolve_now();
+            let after = FOUND
+                .lock()
+                .map(|f| f.iter().filter(|(_, id)| id.is_some()).count())
+                .unwrap_or(0);
+            if com {
+                // SAFETY: pairs the successful CoInitializeEx above.
+                unsafe { windows::Win32::System::Com::CoUninitialize() };
+            }
+            if after > before {
+                done();
+            }
+        });
+}
+
+fn display(
+    item: &windows::Win32::UI::Shell::IShellItem,
+    kind: windows::Win32::UI::Shell::SIGDN,
+) -> Option<String> {
+    // SAFETY: the returned string is freed after it is copied.
+    unsafe {
+        let name = item.GetDisplayName(kind).ok()?;
+        let text = name.to_string().ok();
+        windows::Win32::System::Com::CoTaskMemFree(Some(name.0 as *const core::ffi::c_void));
+        text
+    }
+}
+
+fn find_in_apps_folder(name: &str) -> Option<String> {
+    use windows::Win32::UI::Shell::{
+        BHID_EnumItems, FOLDERID_AppsFolder, IEnumShellItems, IShellItem, KF_FLAG_DEFAULT,
+        SHGetKnownFolderItem, SIGDN_NORMALDISPLAY, SIGDN_PARENTRELATIVEPARSING,
+    };
+    // SAFETY: COM calls on shell items; each fetched item is an owned interface.
+    unsafe {
+        let folder: IShellItem =
+            SHGetKnownFolderItem(&FOLDERID_AppsFolder, KF_FLAG_DEFAULT, None).ok()?;
+        let items: IEnumShellItems = folder.BindToHandler(None, &BHID_EnumItems).ok()?;
+        loop {
+            let mut slot = [None];
+            let mut fetched = 0;
+            if items.Next(&mut slot, Some(&mut fetched)).is_err() || fetched == 0 {
+                return None;
+            }
+            let item = slot[0].take()?;
+            if display(&item, SIGDN_NORMALDISPLAY)
+                .is_some_and(|shown| shown.trim().eq_ignore_ascii_case(name))
+            {
+                let id = display(&item, SIGDN_PARENTRELATIVEPARSING)?;
+                return id.contains('!').then_some(id);
+            }
+        }
+    }
+}
+
+/// Programs that host other apps' windows: a pin pointing at one is matched only by its app identity.
+pub fn is_shared_host(executable_path: &str) -> bool {
+    let name = executable_path
+        .rsplit(['\\', '/'])
+        .next()
+        .unwrap_or(executable_path);
+    name.eq_ignore_ascii_case("ApplicationFrameHost.exe")
+}
+
+/// Squirrel installs (GitHub Desktop, Discord, Slack…) run `<root>\app-<version>\<name>.exe` while their shortcuts
+/// point at the `<root>\<name>.exe` launcher, and the version folder changes with every update: both name the same
+/// app. Returns the launcher path for a versioned one, else the path itself (lowercase).
+pub fn canonical_path(executable_path: &str) -> String {
+    let lower = executable_path.to_lowercase();
+    let path = Path::new(&lower);
+    let versioned = path
+        .parent()
+        .and_then(|dir| dir.file_name())
+        .and_then(|name| name.to_str())
+        .and_then(|name| name.strip_prefix("app-"))
+        .is_some_and(|rest| rest.starts_with(|c: char| c.is_ascii_digit()));
+    if versioned
+        && let (Some(root), Some(file)) = (path.parent().and_then(Path::parent), path.file_name())
+    {
+        return root.join(file).to_string_lossy().into_owned();
+    }
+    lower
 }
 
 /// An .exe target, or Explorer for the File Explorer pin (whose target is empty and icon is explorer.exe).
@@ -335,6 +501,26 @@ mod tests {
                 ("Other".to_owned(), None),
             ]
         );
+    }
+
+    #[test]
+    fn squirrel_versions_and_shared_hosts() {
+        assert_eq!(
+            canonical_path(r"C:\Users\u\AppData\Local\GitHubDesktop\app-3.7.0\GitHubDesktop.exe"),
+            r"c:\users\u\appdata\local\githubdesktop\githubdesktop.exe"
+        );
+        assert_eq!(
+            canonical_path(r"C:\Users\u\AppData\Local\GitHubDesktop\GitHubDesktop.exe"),
+            r"c:\users\u\appdata\local\githubdesktop\githubdesktop.exe"
+        );
+        assert_eq!(
+            canonical_path(r"C:\Tools\app-store\x.exe"),
+            r"c:\tools\app-store\x.exe"
+        );
+        assert!(is_shared_host(
+            r"C:\Windows\System32\ApplicationFrameHost.exe"
+        ));
+        assert!(!is_shared_host(r"C:\Windows\explorer.exe"));
     }
 
     #[test]

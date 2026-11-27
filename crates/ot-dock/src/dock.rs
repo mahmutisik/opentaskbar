@@ -91,6 +91,8 @@ const WM_TRAY_CHANGED: u32 = wm::WM_APP + 15;
 const WM_FULL_SCREEN: u32 = wm::WM_APP + 16;
 /// Opens the Settings window outside the dock's own borrow (the window reads the dock's settings).
 const WM_OPEN_SETTINGS: u32 = wm::WM_APP + 25;
+/// A pinned shortcut's app identity was found in the background (`pins::resolve_in_background`): pins are read again.
+const WM_PINS_RESOLVED: u32 = wm::WM_APP + 0x54;
 const WM_WTSSESSION_CHANGE: u32 = 0x02B1;
 const WTS_SESSION_LOCK: u32 = 0x7;
 const WTS_SESSION_UNLOCK: u32 = 0x8;
@@ -862,6 +864,10 @@ impl Dock {
             unsafe { wm::PostMessageW(target as HWND, WM_ICONS, 0, 0) };
         });
         let pins = pins::load(settings.pin_order.as_deref());
+        pins::resolve_in_background(move || {
+            // SAFETY: posting to our own window from the lookup thread.
+            unsafe { wm::PostMessageW(target as HWND, WM_PINS_RESOLVED, 0, 0) };
+        });
         memory_mark("after pins");
         log::info(format!("Dock: {} pinned apps.", pins.len()));
         let auto_hide = settings.auto_hide != ot_core::settings::AutoHideMode::Disabled;
@@ -1140,7 +1146,12 @@ impl Dock {
                     key: pin.executable_path.to_lowercase(),
                     pin: Some(Box::new(pin.clone())),
                     executable_path: pin.executable_path.clone(),
-                    app_id: None,
+                    // A pin on a shared host (a Store app pinned through ApplicationFrameHost) shows the app's own
+                    // icon, from its identity.
+                    app_id: pin
+                        .app_user_model_id
+                        .clone()
+                        .filter(|_| pins::is_shared_host(&pin.executable_path)),
                 },
                 group: Group::Apps,
                 windows: Vec::new(),
@@ -1158,12 +1169,36 @@ impl Dock {
                 .filter(|id| id.contains('!'));
             let path_key = path.to_lowercase();
             let id_key = packaged.map(str::to_lowercase);
-            let existing = items.iter_mut().find(|item| match &item.kind {
-                ItemKind::App { key, .. } => {
-                    *key == path_key || id_key.as_deref() == Some(key.as_str())
-                }
-                _ => false,
+            let canonical = pins::canonical_path(path);
+            let window_id = window.app_user_model_id.as_deref();
+            // A pin with the window's app identity wins (a pinned web app over its browser), then a path match:
+            // a Squirrel app's versioned folder and its launcher are the same app, and a shared host's path (every
+            // Store app's frame) never decides.
+            let by_identity = window_id.and_then(|id| {
+                items.iter().position(|item| {
+                    matches!(&item.kind, ItemKind::App { pin: Some(pin), .. }
+                        if pin.app_user_model_id.as_deref().is_some_and(|p| p.eq_ignore_ascii_case(id)))
+                })
             });
+            let by_path = || {
+                items.iter().position(|item| match &item.kind {
+                    ItemKind::App {
+                        key,
+                        pin: Some(pin),
+                        ..
+                    } => {
+                        !pins::is_shared_host(&pin.executable_path)
+                            && (*key == path_key || pins::canonical_path(key) == canonical)
+                    }
+                    ItemKind::App { key, .. } => {
+                        *key == path_key
+                            || id_key.as_deref() == Some(key.as_str())
+                            || pins::canonical_path(key) == canonical
+                    }
+                    _ => false,
+                })
+            };
+            let existing = by_identity.or_else(by_path).map(|index| &mut items[index]);
             match existing {
                 Some(item) => {
                     item.windows.push(window.handle);
@@ -6630,6 +6665,14 @@ unsafe extern "system" fn window_proc(
                 dock.note_foreground(foreground);
                 dock.refresh_overlap();
                 dock.autohide_evaluate();
+            });
+            return 0;
+        }
+        WM_PINS_RESOLVED => {
+            with_dock_or_defer(hwnd, message, wparam, lparam, |dock| {
+                let order = dock.pin_order();
+                dock.pins = pins::load(Some(&order));
+                dock.rebuild_items();
             });
             return 0;
         }

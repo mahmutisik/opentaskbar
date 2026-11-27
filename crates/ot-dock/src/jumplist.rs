@@ -311,7 +311,7 @@ const AUTOMATIC_IID: GUID = GUID::from_u128(0xe9c5ef8d_fd41_4f72_ba87_eb03bad581
 const OBJECT_ARRAY_IID: GUID = GUID::from_u128(0x92ca9dcd_5622_4bba_a805_5e9f541bd8c9);
 const APP_FORMAT: GUID = GUID::from_u128(0x9f4c2855_9f79_4b39_a8d0_e1d42de1d5f3);
 /// `PKEY_AppUserModel_ID`, `_IsDestListSeparator`, `_HostEnvironment`, `_ActivationContext`.
-const APP_ID_KEY: PROPERTYKEY = PROPERTYKEY {
+pub(crate) const APP_ID_KEY: PROPERTYKEY = PROPERTYKEY {
     fmtid: APP_FORMAT,
     pid: 5,
 };
@@ -455,7 +455,10 @@ impl Drop for Value {
     }
 }
 
-fn read_string(store: &IPropertyStore, key: &PROPERTYKEY) -> windows::core::Result<Option<String>> {
+pub(crate) fn read_string(
+    store: &IPropertyStore,
+    key: &PROPERTYKEY,
+) -> windows::core::Result<Option<String>> {
     Ok(Value::read(store, key)?.text())
 }
 

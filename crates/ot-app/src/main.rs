@@ -391,7 +391,25 @@ fn icon_test() {
             windows_sys::Win32::System::Com::COINIT_APARTMENTTHREADED as u32,
         )
     };
-    let names: Vec<String> = ot_dock::pins::load(None)
+    let started = std::time::Instant::now();
+    let mut pins = ot_dock::pins::load(None);
+    let first = started.elapsed();
+    let started = std::time::Instant::now();
+    if ot_dock::pins::resolve_now() {
+        pins = ot_dock::pins::load(None);
+    }
+    println!(
+        "pins: {} read in {first:?}; Apps folder lookup and second read {:?}",
+        pins.len(),
+        started.elapsed()
+    );
+    for pin in &pins {
+        println!(
+            "pin {}: {} | id {:?}",
+            pin.name, pin.executable_path, pin.app_user_model_id
+        );
+    }
+    let names: Vec<String> = pins
         .iter()
         .map(|p| ot_dock::icons::parsing_name(&p.executable_path, p.app_user_model_id.as_deref()))
         .collect();
