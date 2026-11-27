@@ -303,7 +303,9 @@ impl BarSpec {
         let length = if stretched {
             available
         } else if let Some(fixed) = self.fixed_length {
-            px(fixed).min(available)
+            // A fixed width is the dock's size while its content fits; when more apps or widgets need room it grows
+            // instead of cutting them off (the user's report; OpenTaskbar keeps the fixed width and scrolls).
+            px(fixed).max(content).min(available)
         } else {
             content.min(available)
         };
@@ -454,6 +456,13 @@ mod tests {
             (fixed.x, fixed.width, fixed.content_offset),
             (510.0, 900.0, 200.0)
         );
+        // Content wider than the fixed width: the bar grows to fit it, within the window.
+        let grown = BarSpec {
+            fixed_length: Some(300.0),
+            ..spec(DockEdge::Bottom, DockPosition::Center)
+        }
+        .place(window, 500.0, 44.0, 1.0);
+        assert_eq!((grown.width, grown.content_offset), (500.0, 0.0));
     }
 
     #[test]
