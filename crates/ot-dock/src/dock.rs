@@ -6550,6 +6550,16 @@ unsafe extern "system" fn window_proc(
             }
             return 0;
         }
+        // WM_POWERBROADCAST / PBT_APMRESUMEAUTOMATIC: the computer woke from sleep.
+        0x0218 if wparam == 0x12 => {
+            with_dock_or_defer(hwnd, message, wparam, lparam, |dock| {
+                dock.widgets.resumed();
+                if !dock.autohide.hidden {
+                    dock.update_widgets(false);
+                }
+            });
+            return 1;
+        }
         wm::WM_DESTROY => {
             // SAFETY: our own window, registered in `Dock::new`.
             unsafe {

@@ -378,6 +378,8 @@ pub trait Widget {
     fn click(&self) -> Option<Action> {
         None
     }
+    /// The computer woke from sleep: data that failed or went stale can be fetched again now.
+    fn resumed(&mut self) {}
     /// The card's corner radius for the dock's `WidgetRadius`.
     fn radius(&self, widget_radius: f32) -> f32 {
         widget_radius
@@ -496,6 +498,12 @@ impl Widgets {
 
     pub fn is_empty(&self) -> bool {
         self.items.is_empty()
+    }
+
+    pub fn resumed(&mut self) {
+        for widget in &mut self.items {
+            widget.resumed();
+        }
     }
 }
 

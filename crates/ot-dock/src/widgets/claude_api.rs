@@ -545,9 +545,11 @@ pub fn load() -> Outcome {
             ("anthropic-beta", "oauth-2025-04-20".to_owned()),
         ];
         let Some((status, body, retry_after)) = request("GET", USAGE_PATH, &headers, None) else {
+            // No answer at all (offline, network not up yet after start or sleep): try again soon instead of the
+            // minutes-long backoff meant for server errors.
             return Outcome::Error {
                 key: "ErrorAiUsageLoad",
-                retry_after: None,
+                retry_after: Some(Duration::from_secs(30)),
             };
         };
         match status {

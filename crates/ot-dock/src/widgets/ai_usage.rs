@@ -150,6 +150,7 @@ impl ClaudeUsage {
             Outcome::Error { key, retry_after } => {
                 self.error = Some(key);
                 self.failures = (self.failures + 1).min(10);
+                let logged_key = key;
                 if key == "ErrorAiUsageSignIn" {
                     self.sign_in_stamp = Some(claude_api::credential_stamp());
                 }
@@ -166,6 +167,16 @@ impl ClaudeUsage {
                     }
                 };
                 self.next_load = Some(now + wait);
+                ot_core::log::warn(format!(
+                    "Claude usage: {logged_key} (failure {}); next try in {} s{}.",
+                    self.failures,
+                    wait.as_secs(),
+                    if self.report.is_some() {
+                        ", the last data stays"
+                    } else {
+                        ""
+                    }
+                ));
             }
         }
     }
@@ -217,6 +228,15 @@ impl ClaudeUsage {
 }
 
 impl Widget for ClaudeUsage {
+    fn resumed(&mut self) {
+        // After sleep the backoff may still be minutes away: try again on the next tick (a sign-in error still waits
+        // for the credential to change).
+        if self.pending.is_none() && (self.error.is_some() || self.report.is_none() || self.stale) {
+            self.next_load = None;
+            self.failures = 0;
+        }
+    }
+
     fn id(&self) -> &'static str {
         "AiUsageClaude"
     }
