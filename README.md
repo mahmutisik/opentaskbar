@@ -42,6 +42,12 @@ cargo test --workspace
 
 The program is `target\release\OpenTaskBar.exe`. Its settings, log and theme packs are in `%LOCALAPPDATA%\OpenTaskBar-Rust`, separate from OpenTaskbar's, so both can be installed side by side.
 
+## Credits and thanks
+
+This project would not exist without [OpenTaskbar](https://github.com/alztrk/opentaskbar) by **Alican Öztürk** ([alztrk](https://github.com/alztrk)). Its design, its behaviour and its settings format are the reference this port was built against, rule by rule and pixel by pixel. Several of the fixes here came from comparing with his own Rust port. Thank you, Alican, for creating OpenTaskbar, sharing it under the MIT license and welcoming contributions.
+
+Thanks also to everyone who contributed to OpenTaskbar.
+
 ## License
 
 MIT. Based on OpenTaskbar, © OpenTaskbar contributors.
