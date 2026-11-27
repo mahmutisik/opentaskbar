@@ -1134,16 +1134,6 @@ impl Dock {
         if s.show_task_view_button {
             items.push(shell(ItemKind::TaskView));
         }
-        // `DefaultDockOrder`: Show Desktop ("peek") right after the shell group, before the apps.
-        if s.show_desktop_button {
-            items.push(Item {
-                kind: ItemKind::ShowDesktop,
-                group: Group::Apps,
-                windows: Vec::new(),
-                foreground: false,
-                notify: false,
-            });
-        }
         for pin in &self.pins {
             items.push(Item {
                 kind: ItemKind::App {
@@ -1242,7 +1232,7 @@ impl Dock {
                 notify: false,
             });
         }
-        // `ApplyPinnedGroups`: the background-apps button and the Recycle Bin trail the strip, the bin last.
+        // `ApplyPinnedGroups`: the background-apps button, Show Desktop and the Recycle Bin trail the strip, the bin last.
         if s.show_tray_button {
             for pin in &self.tray_pins {
                 items.push(Item {
@@ -1255,6 +1245,17 @@ impl Dock {
             }
             items.push(Item {
                 kind: ItemKind::Tray,
+                group: Group::Tray,
+                windows: Vec::new(),
+                foreground: false,
+                notify: false,
+            });
+        }
+        // Show Desktop: a visible button between the tray button and the Recycle Bin, in the tray group (after the
+        // tray's divider). OpenTaskbar's is an invisible strip after Start/Search/Task View, which users could not find.
+        if s.show_desktop_button {
+            items.push(Item {
+                kind: ItemKind::ShowDesktop,
                 group: Group::Tray,
                 windows: Vec::new(),
                 foreground: false,
@@ -1504,7 +1505,6 @@ impl Dock {
             .iter()
             .enumerate()
             .map(|(index, item)| match item.kind {
-                ItemKind::ShowDesktop => Slot::show_desktop(item.group),
                 // `WidgetCardButton`: the card, 3 DIP of `WidgetSpacing` on each side.
                 ItemKind::Widget(id) => Slot {
                     group: item.group,
@@ -1948,8 +1948,7 @@ impl Dock {
                         ItemKind::Start => "start",
                         ItemKind::Search => "\u{E721}",
                         ItemKind::TaskView => "\u{E7C4}",
-                        // An empty strip, as in OpenTaskbar.
-                        ItemKind::ShowDesktop => "",
+                        ItemKind::ShowDesktop => "tray:ShowDesktop",
                         // The chevron points where the flyout opens.
                         ItemKind::Tray => match self.settings.edge {
                             DockEdge::Bottom => "tray:ChevronUp",
@@ -4137,6 +4136,7 @@ impl Dock {
                 ItemKind::Start
                     | ItemKind::Search
                     | ItemKind::TaskView
+                    | ItemKind::ShowDesktop
                     | ItemKind::Tray
                     | ItemKind::TrayPin(_)
                     | ItemKind::Widget(_)

@@ -127,8 +127,11 @@ pub enum Group {
 /// `TrayGroupDivider`: like the shell divider, with a 6 DIP margin before it (each margin grown by the icon padding).
 pub const TRAY_DIVIDER_MARGIN: f64 = 6.0;
 
-/// Show Desktop (`ShowDesktopButton`): a 6 DIP strip with a 3 DIP margin before it, invisible like OpenTaskbar's.
+/// OpenTaskbar's Show Desktop (`ShowDesktopButton`): a 6 DIP strip with a 3 DIP margin before it, invisible. The
+/// dock now shows a visible button instead (the user's request); the strip stays for the layout tests.
+#[cfg(test)]
 pub const PEEK_STRIP: f64 = 6.0;
+#[cfg(test)]
 pub const PEEK_MARGIN: f64 = 3.0;
 
 /// One item's place in the bar: its group, its length along the bar and its margins before and after.
@@ -164,6 +167,7 @@ impl Slot {
     }
 
     /// Show Desktop: its own 3 DIP left margin replaces the button margins.
+    #[cfg(test)]
     pub fn show_desktop(group: Group) -> Self {
         Self {
             group,

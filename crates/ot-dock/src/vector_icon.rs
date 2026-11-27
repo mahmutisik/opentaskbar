@@ -40,6 +40,10 @@ pub fn path_data(name: &str) -> Option<&'static str> {
             "M20 20a2 2 0 0 0 2-2V8a2 2 0 0 0-2-2h-7.9a2 2 0 0 1-1.69-.9L9.6 3.9A2 2 0 0 0 7.93 3H4a2 2 0 0 0-2 2v13a2 2 0 0 0 2 2z"
         }
         "Search" => "M11 19a8 8 0 1 0 0-16a8 8 0 0 0 0 16z M21 21l-4.3-4.3",
+        // A screen with everything going down: Show Desktop.
+        "ShowDesktop" => {
+            "M4 3h16a2 2 0 0 1 2 2v10a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2z M8 21h8 M12 17v4 M12 6v6 M9 9.5l3 3 3-3"
+        }
         "Terminal" => "M4 17l6-5-6-5 M12 19h8",
         "Cpu" => {
             "M5 5h14v14H5z M9 9h6v6H9z M9 1v4 M15 1v4 M9 19v4 M15 19v4 M1 9h4 M1 15h4 M19 9h4 M19 15h4"
